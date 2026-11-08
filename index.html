@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Perhutangan ♡</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+<body>
+<div class="app-shell">
+
+    <header class="topbar">
+        <div>
+            <p class="eyebrow">OUR FINANCE SPACE ♡</p>
+            <h1>Perhutangan</h1>
+            <p class="subtitle">Things will end soon okay.</p>
+        </div>
+        <div id="connectionStatus" class="connection">Connecting...</div>
+    </header>
+
+    <!-- SUMMARY -->
+    <section class="summary-grid">
+        <article class="summary-card">
+            <span class="summary-label">Active Debts This Month</span>
+            <strong id="monthActiveCount">0</strong>
+            <small>Debt records scheduled this month</small>
+        </article>
+
+        <article class="summary-card">
+            <span class="summary-label">Due This Month</span>
+            <strong id="monthTotal">RM 0.00</strong>
+            <small id="monthCount">0 remaining instalments</small>
+        </article>
+
+        <article class="summary-card">
+            <span class="summary-label">Overall Active Debts</span>
+            <strong id="overallActiveCount">0</strong>
+            <small>Remaining monthly instalments across all debts</small>
+        </article>
+
+        <article class="summary-card">
+            <span class="summary-label">Overall Total Outstanding Debt</span>
+            <strong id="overallDebt">RM 0.00</strong>
+            <small id="overallInstallments">0 remaining instalments</small>
+        </article>
+    </section>
+
+    <!-- CALENDAR + ADD DEBT -->
+    <main class="main-grid">
+
+        <section class="panel calendar-panel">
+
+            <div class="section-heading">
+                <div>
+                    <p class="eyebrow">PAYMENT SCHEDULE</p>
+                    <h2>Our Calendar</h2>
+                </div>
+
+                <div class="calendar-controls">
+                    <button id="prevMonth" type="button">‹</button>
+                    <strong id="monthYear"></strong>
+                    <button id="nextMonth" type="button">›</button>
+                </div>
+            </div>
+
+            <div class="calendar-weekdays">
+                <span>Sun</span>
+                <span>Mon</span>
+                <span>Tue</span>
+                <span>Wed</span>
+                <span>Thu</span>
+                <span>Fri</span>
+                <span>Sat</span>
+            </div>
+
+            <div id="calendar" class="calendar"></div>
+
+            <div class="calendar-legend">
+                <span><i class="legend-dot unpaid"></i> Upcoming</span>
+                <span><i class="legend-dot overdue"></i> Overdue</span>
+                <span><i class="legend-dot paid"></i> Paid</span>
+            </div>
+
+            <!-- UPCOMING REMINDERS -->
+            <div class="upcoming-reminders">
+                <div class="section-heading">
+                    <div>
+                        <p class="eyebrow">DON'T FORGET ♡</p>
+                        <h3>Upcoming in 7 Days</h3>
+                    </div>
+                    <span id="reminderCount" class="count-pill">0 payments</span>
+                </div>
+
+                <div id="upcomingReminderList">
+                    <p class="muted">No upcoming payments ♡</p>
+                </div>
+            </div>
+
+            <!-- SELECTED DATE -->
+            <div class="selected-day">
+                <h3 id="selectedDateTitle">Select a date</h3>
+                <div id="selectedPaymentsList"></div>
+
+                <div id="weeklyTotal" class="weekly-total">
+                    <div>
+                        <span>Outstanding this week</span>
+                        <small>Sunday – Saturday</small>
+                    </div>
+                    <strong>RM 0.00</strong>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- ADD DEBT -->
+        <aside class="side-column">
+            <section class="panel form-panel">
+
+                <p class="eyebrow">ADD A NEW COMMITMENT</p>
+                <h2>Add Monthly Debt ♡</h2>
+
+                <form id="debtForm">
+
+                    <label for="person">Person</label>
+                    <select id="person" name="person" required>
+                        <option value="">Choose person</option>
+                        <option value="Baby">Baby</option>
+                        <option value="Sayang">Sayang</option>
+                        <option value="Everyone">Everyone</option>
+                    </select>
+
+                    <label for="name">Debt Category</label>
+                    <select id="name" name="name" required>
+                        <option value="">Choose category</option>
+                        <option value="atomepaylater">Atome PayLater</option>
+                        <option value="atomecard">Atome Card</option>
+                        <option value="atomeloan">Atome Loan</option>
+                        <option value="spaylater">SPayLater</option>
+                        <option value="sloan">SLoan</option>
+                        <option value="tiktokpaylater">TikTok PayLater</option>
+                        <option value="tiktokloan">TikTok Loan</option>
+                    </select>
+
+                    <label for="amount">Monthly Amount (RM)</label>
+                    <input
+                        id="amount"
+                        name="amount"
+                        type="number"
+                        min="0.01"
+                        step="0.01"
+                        placeholder="e.g. 50.00"
+                        required
+                    >
+
+                    <label for="months">Number of Months</label>
+                    <input
+                        id="months"
+                        name="months"
+                        type="number"
+                        min="1"
+                        max="600"
+                        step="1"
+                        placeholder="e.g. 12"
+                        required
+                    >
+
+                    <label for="first_due_date">First Payment Date</label>
+                    <input
+                        id="first_due_date"
+                        name="first_due_date"
+                        type="date"
+                        required
+                    >
+
+                    <label for="note">Note (Optional)</label>
+                    <textarea
+                        id="note"
+                        name="note"
+                        rows="2"
+                        placeholder="A little note..."
+                    ></textarea>
+
+                    <button id="submitBtn" class="primary-btn" type="submit">
+                        Add to Our Board ♡
+                    </button>
+
+                    <p id="formMessage" class="form-message"></p>
+
+                </form>
+            </section>
+        </aside>
+
+    </main>
+
+    <!-- ALL DEBTS -->
+    <section class="panel debts-panel">
+
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">OUR COMMITMENTS</p>
+                <h2>All Debts</h2>
+                <p class="subtitle">See what each of us still has to pay.</p>
+            </div>
+            <span class="count-pill" id="debtListCount">0 debts</span>
+        </div>
+
+        <!-- PERSON TOTALS -->
+        <div class="person-summary-grid">
+
+            <article class="person-summary baby-summary">
+                <span class="person-tag baby-tag">BABY ♡</span>
+                <strong id="babyOutstanding">RM 0.00</strong>
+                <small id="babyInstallments">0 remaining instalments</small>
+            </article>
+
+            <article class="person-summary sayang-summary">
+                <span class="person-tag sayang-tag">SAYANG ♡</span>
+                <strong id="sayangOutstanding">RM 0.00</strong>
+                <small id="sayangInstallments">0 remaining instalments</small>
+            </article>
+
+            <article class="person-summary everyone-summary">
+                <span class="person-tag everyone-tag">EVERYONE ♡</span>
+                <strong id="everyoneOutstanding">RM 0.00</strong>
+                <small id="everyoneInstallments">0 remaining instalments</small>
+            </article>
+
+        </div>
+
+        <!-- FILTERS -->
+        <div class="filter-area">
+
+            <div class="filter-field">
+                <label for="personFilter">Filter Person</label>
+                <select id="personFilter">
+                    <option value="all">Everyone</option>
+                    <option value="Baby">Baby</option>
+                    <option value="Sayang">Sayang</option>
+                    <option value="Everyone">Everyone (Shared)</option>
+                </select>
+            </div>
+
+            <div class="filter-field">
+                <label for="categoryFilter">Filter Category</label>
+                <select id="categoryFilter">
+                    <option value="all">All Categories</option>
+                    <option value="atomepaylater">Atome PayLater</option>
+                    <option value="atomecard">Atome Card</option>
+                    <option value="atomeloan">Atome Loan</option>
+                    <option value="spaylater">SPayLater</option>
+                    <option value="sloan">SLoan</option>
+                    <option value="tiktokpaylater">TikTok PayLater</option>
+                    <option value="tiktokloan">TikTok Loan</option>
+                </select>
+            </div>
+
+            <div class="filter-field">
+                <label for="debtDateFilter">Filter Payment Date</label>
+                <input
+                    id="debtDateFilter"
+                    type="text"
+                    inputmode="numeric"
+                    placeholder="DD/MM/YYYY"
+                    pattern="(0[1-9]|[12][0-9]|3[01])/(0[1-9]|1[0-2])/[0-9]{4}"
+                >
+            </div>
+
+            <button id="clearDebtFilter" class="secondary-btn" type="button">
+                Clear Filters
+            </button>
+
+        </div>
+
+        <div class="filter-result">
+            <span id="debtFilterMessage">Showing all our debts.</span>
+            <strong id="filteredOutstanding">RM 0.00 outstanding</strong>
+        </div>
+
+        <div id="debtList" class="debt-list">
+            <p class="muted">Loading our debts...</p>
+        </div>
+
+    </section>
+
+    <footer>
+        Made with love ♡ · Our Little Finance Space
+    </footer>
+
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

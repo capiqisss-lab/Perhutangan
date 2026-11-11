@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -100,16 +101,31 @@
 
             <!-- SELECTED DATE -->
             <div class="selected-day">
+
                 <h3 id="selectedDateTitle">Select a date</h3>
+
                 <div id="selectedPaymentsList"></div>
 
+                <!-- OUTSTANDING THIS DAY -->
+                <div id="dailyTotal" class="weekly-total daily-total">
+                    <div>
+                        <span>Outstanding this day</span>
+                        <small id="dailyTotalDate">Selected date</small>
+                    </div>
+
+                    <strong id="dailyOutstanding">RM 0.00</strong>
+                </div>
+
+                <!-- OUTSTANDING THIS WEEK -->
                 <div id="weeklyTotal" class="weekly-total">
                     <div>
                         <span>Outstanding this week</span>
                         <small>Sunday – Saturday</small>
                     </div>
+
                     <strong>RM 0.00</strong>
                 </div>
+
             </div>
 
         </section>

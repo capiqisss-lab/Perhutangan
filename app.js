@@ -1,5 +1,9 @@
+
+"use strict";
+
 // ==========================================
-// PERHUTANGAN
+// PERHUTANGAN ♡
+// FAMILY DEBT TRACKER
 // ==========================================
 
 
@@ -141,9 +145,6 @@ function categoryName(category) {
 // ==========================================
 // PERSON HELPERS
 // ==========================================
-
-// Normalises old "Others" records to "Everyone"
-// so existing records can still be displayed.
 
 function normalisePerson(person) {
     const value = String(person || "").trim().toLowerCase();
@@ -342,8 +343,6 @@ function render() {
     // BOX 1: ACTIVE DEBTS THIS MONTH
     // ======================================
 
-    // Count unique debt records scheduled this month.
-
     const monthActiveDebts = new Set(
         monthEvents.map(event => String(event.debt.id))
     ).size;
@@ -365,9 +364,6 @@ function render() {
     // ======================================
     // BOX 3: OVERALL ACTIVE DEBTS
     // ======================================
-
-    // Count every unpaid monthly instalment.
-    // Example: 10 months + 10 months = 20.
 
     $("overallActiveCount").textContent =
         allRemaining.length;
@@ -583,7 +579,7 @@ function renderUpcomingReminders(upcoming) {
 
 
 // ==========================================
-// SELECTED DATE AND WEEKLY TOTAL
+// SELECTED DATE AND OUTSTANDING TOTALS
 // ==========================================
 
 function renderSelectedDate(events) {
@@ -602,6 +598,35 @@ function renderSelectedDate(events) {
     );
 
     const container = $("selectedPaymentsList");
+
+
+    // ======================================
+    // NEW BOX: OUTSTANDING THIS DAY
+    // ======================================
+
+    // Get only unpaid instalments for the selected date.
+
+    const dailyRemaining = getRemainingEvents(dayEvents);
+
+    const dailyOutstanding = dailyRemaining.reduce(
+        (sum, event) => sum + Number(event.amount || 0),
+        0
+    );
+
+    // Update the daily outstanding amount.
+
+    $("dailyOutstanding").textContent =
+        money(dailyOutstanding);
+
+    // Display selected date and remaining payment count.
+
+    $("dailyTotalDate").textContent =
+        `${formatDate(selectedDate)} · ${dailyRemaining.length} remaining instalments`;
+
+
+    // ======================================
+    // DISPLAY PAYMENTS FOR SELECTED DATE
+    // ======================================
 
     if (!dayEvents.length) {
         container.innerHTML =
@@ -643,7 +668,13 @@ function renderSelectedDate(events) {
         }).join("");
     }
 
+
+    // ======================================
+    // OUTSTANDING THIS WEEK
+    // ======================================
+
     // Week starts Sunday and ends Saturday.
+
     const weekStart = new Date(selected);
     weekStart.setDate(selected.getDate() - selected.getDay());
 
@@ -675,6 +706,11 @@ function renderSelectedDate(events) {
         </div>
         <strong>${money(weeklyOutstanding)}</strong>
     `;
+
+
+    // ======================================
+    // MARK PAID / UNDO BUTTONS
+    // ======================================
 
     container.querySelectorAll("[data-toggle]").forEach(button => {
         button.addEventListener("click", () => {
@@ -719,6 +755,7 @@ function renderDebtList() {
 
 
     // FILTER BY PERSON
+
     if (personFilter !== "all") {
         displayedDebts = displayedDebts.filter(debt =>
             normalisePerson(debt.person) === personFilter
@@ -727,6 +764,7 @@ function renderDebtList() {
 
 
     // FILTER BY CATEGORY
+
     if (categoryFilter !== "all") {
         displayedDebts = displayedDebts.filter(debt =>
             debt.name === categoryFilter
@@ -735,6 +773,7 @@ function renderDebtList() {
 
 
     // FILTER BY PAYMENT DATE
+
     if (filterDate) {
         displayedDebts = displayedDebts.filter(debt =>
             occurrences(debt).some(event =>
@@ -790,6 +829,7 @@ function renderDebtList() {
 
 
     // DISPLAY ALL DEBT CARDS
+
     $("debtList").innerHTML = displayedDebts.map(debt => {
 
         const schedule = occurrences(debt);
@@ -808,7 +848,6 @@ function renderDebtList() {
         ).length;
 
         // Last scheduled instalment date.
-        // This remains the same even after payments are marked paid.
 
         const lastPayment = schedule.length
             ? schedule[schedule.length - 1].dueDate
@@ -915,6 +954,7 @@ function renderDebtList() {
 
 
     // DELETE BUTTON EVENTS
+
     $("debtList").querySelectorAll("[data-delete]").forEach(button => {
         button.addEventListener("click", () => {
             deleteDebt(button.dataset.delete);
@@ -932,6 +972,7 @@ async function togglePaid(debtId, dueDate) {
 
     try {
         if (existing?.paid === true) {
+
             const { error } = await db
                 .from("debt_payments")
                 .delete()
@@ -940,6 +981,7 @@ async function togglePaid(debtId, dueDate) {
             if (error) throw error;
 
         } else if (existing) {
+
             const { error } = await db
                 .from("debt_payments")
                 .update({ paid: true })
@@ -948,6 +990,7 @@ async function togglePaid(debtId, dueDate) {
             if (error) throw error;
 
         } else {
+
             const { error } = await db
                 .from("debt_payments")
                 .insert({
@@ -1026,6 +1069,7 @@ $("debtForm").addEventListener("submit", async event => {
 
 
     // VALIDATE PERSON
+
     if (!["Baby", "Sayang", "Everyone"].includes(record.person)) {
         showMessage("Please choose Baby, Sayang or Everyone.", true);
         return;
@@ -1033,6 +1077,7 @@ $("debtForm").addEventListener("submit", async event => {
 
 
     // VALIDATE CATEGORY
+
     if (!Object.prototype.hasOwnProperty.call(CATEGORIES, record.name)) {
         showMessage("Please choose a valid debt category.", true);
         return;
@@ -1040,6 +1085,7 @@ $("debtForm").addEventListener("submit", async event => {
 
 
     // VALIDATE AMOUNT AND MONTHS
+
     if (
         !Number.isFinite(record.amount) ||
         record.amount <= 0 ||
@@ -1053,6 +1099,7 @@ $("debtForm").addEventListener("submit", async event => {
 
 
     // VALIDATE FIRST PAYMENT DATE
+
     if (!dueDate || !/^\d{4}-\d{2}-\d{2}$/.test(dueDate)) {
         showMessage("Please choose a valid first payment date.", true);
         return;

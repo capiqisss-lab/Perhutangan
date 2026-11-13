@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -84,19 +83,58 @@
                 <span><i class="legend-dot paid"></i> Paid</span>
             </div>
 
+            <!-- SELECTED MONTH PERSON BREAKDOWN -->
+            <section class="monthly-breakdown" aria-live="polite">
+
+                <div class="monthly-breakdown-heading">
+                    <div>
+                        <p class="eyebrow">THIS MONTH, TOGETHER ♡</p>
+                        <h3>Monthly Person Breakdown</h3>
+                        <p id="monthlyBreakdownLabel" class="monthly-breakdown-note">
+                            Selected month · unpaid instalments only
+                        </p>
+                    </div>
+                </div>
+
+                <div class="monthly-person-grid">
+
+                    <article class="monthly-person-card baby">
+                        <span class="person-tag baby-tag">EISYA ♡</span>
+                        <strong id="monthEisyaOutstanding">RM 0.00</strong>
+                        <small id="monthEisyaInstallments">0 remaining instalments</small>
+                    </article>
+
+                    <article class="monthly-person-card sayang">
+                        <span class="person-tag sayang-tag">CAPIQ ♡</span>
+                        <strong id="monthCapiqOutstanding">RM 0.00</strong>
+                        <small id="monthCapiqInstallments">0 remaining instalments</small>
+                    </article>
+
+                    <article class="monthly-person-card everyone">
+                        <span class="person-tag everyone-tag">EVERYONE ♡</span>
+                        <strong id="monthEveryoneOutstanding">RM 0.00</strong>
+                        <small id="monthEveryoneInstallments">0 remaining instalments</small>
+                    </article>
+
+                </div>
+            </section>
+
             <!-- UPCOMING REMINDERS -->
             <div class="upcoming-reminders">
+
                 <div class="section-heading">
                     <div>
                         <p class="eyebrow">DON'T FORGET ♡</p>
                         <h3>Upcoming in 7 Days</h3>
                     </div>
+
                     <span id="reminderCount" class="count-pill">0 payments</span>
                 </div>
 
                 <div id="upcomingReminderList">
                     <p class="muted">No upcoming payments ♡</p>
                 </div>
+
             </div>
 
             <!-- SELECTED DATE -->
@@ -108,22 +146,26 @@
 
                 <!-- OUTSTANDING THIS DAY -->
                 <div id="dailyTotal" class="weekly-total daily-total">
+
                     <div>
                         <span>Outstanding this day</span>
                         <small id="dailyTotalDate">Selected date</small>
                     </div>
 
                     <strong id="dailyOutstanding">RM 0.00</strong>
+
                 </div>
 
                 <!-- OUTSTANDING THIS WEEK -->
                 <div id="weeklyTotal" class="weekly-total">
+
                     <div>
                         <span>Outstanding this week</span>
                         <small>Sunday – Saturday</small>
                     </div>
 
                     <strong>RM 0.00</strong>
+
                 </div>
 
             </div>
@@ -132,6 +174,7 @@
 
         <!-- ADD DEBT -->
         <aside class="side-column">
+
             <section class="panel form-panel">
 
                 <p class="eyebrow">ADD A NEW COMMITMENT</p>
@@ -140,14 +183,16 @@
                 <form id="debtForm">
 
                     <label for="person">Person</label>
+
                     <select id="person" name="person" required>
                         <option value="">Choose person</option>
-                        <option value="Baby">Baby</option>
-                        <option value="Sayang">Sayang</option>
+                        <option value="Eisya">Eisya</option>
+                        <option value="Capiq">Capiq</option>
                         <option value="Everyone">Everyone</option>
                     </select>
 
                     <label for="name">Debt Category</label>
+
                     <select id="name" name="name" required>
                         <option value="">Choose category</option>
                         <option value="atomepaylater">Atome PayLater</option>
@@ -160,6 +205,7 @@
                     </select>
 
                     <label for="amount">Monthly Amount (RM)</label>
+
                     <input
                         id="amount"
                         name="amount"
@@ -171,6 +217,7 @@
                     >
 
                     <label for="months">Number of Months</label>
+
                     <input
                         id="months"
                         name="months"
@@ -183,6 +230,7 @@
                     >
 
                     <label for="first_due_date">First Payment Date</label>
+
                     <input
                         id="first_due_date"
                         name="first_due_date"
@@ -191,6 +239,7 @@
                     >
 
                     <label for="note">Note (Optional)</label>
+
                     <textarea
                         id="note"
                         name="note"
@@ -205,7 +254,9 @@
                     <p id="formMessage" class="form-message"></p>
 
                 </form>
+
             </section>
+
         </aside>
 
     </main>
@@ -214,27 +265,34 @@
     <section class="panel debts-panel">
 
         <div class="section-heading">
+
             <div>
                 <p class="eyebrow">OUR COMMITMENTS</p>
                 <h2>All Debts</h2>
                 <p class="subtitle">See what each of us still has to pay.</p>
             </div>
+
             <span class="count-pill" id="debtListCount">0 debts</span>
+
         </div>
 
-        <!-- PERSON TOTALS -->
+        <!-- OVERALL PERSON TOTALS ACROSS ALL MONTHS -->
+        <p class="eyebrow overall-person-eyebrow">
+            OVERALL OUTSTANDING BY PERSON
+        </p>
+
         <div class="person-summary-grid">
 
             <article class="person-summary baby-summary">
-                <span class="person-tag baby-tag">BABY ♡</span>
-                <strong id="babyOutstanding">RM 0.00</strong>
-                <small id="babyInstallments">0 remaining instalments</small>
+                <span class="person-tag baby-tag">EISYA ♡</span>
+                <strong id="eisyaOutstanding">RM 0.00</strong>
+                <small id="eisyaInstallments">0 remaining instalments</small>
             </article>
 
             <article class="person-summary sayang-summary">
-                <span class="person-tag sayang-tag">SAYANG ♡</span>
-                <strong id="sayangOutstanding">RM 0.00</strong>
-                <small id="sayangInstallments">0 remaining instalments</small>
+                <span class="person-tag sayang-tag">CAPIQ ♡</span>
+                <strong id="capiqOutstanding">RM 0.00</strong>
+                <small id="capiqInstallments">0 remaining instalments</small>
             </article>
 
             <article class="person-summary everyone-summary">
@@ -250,16 +308,18 @@
 
             <div class="filter-field">
                 <label for="personFilter">Filter Person</label>
+
                 <select id="personFilter">
                     <option value="all">Everyone</option>
-                    <option value="Baby">Baby</option>
-                    <option value="Sayang">Sayang</option>
+                    <option value="Eisya">Eisya</option>
+                    <option value="Capiq">Capiq</option>
                     <option value="Everyone">Everyone (Shared)</option>
                 </select>
             </div>
 
             <div class="filter-field">
                 <label for="categoryFilter">Filter Category</label>
+
                 <select id="categoryFilter">
                     <option value="all">All Categories</option>
                     <option value="atomepaylater">Atome PayLater</option>
@@ -274,6 +334,7 @@
 
             <div class="filter-field">
                 <label for="debtDateFilter">Filter Payment Date</label>
+
                 <input
                     id="debtDateFilter"
                     type="text"

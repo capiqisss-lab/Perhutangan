@@ -1,1229 +1,1394 @@
 "use strict";
 
-// ==========================================
+// =============================================
 // PERHUTANGAN ♡
-// FAMILY DEBT TRACKER
-// ==========================================
+// FAMILY FINANCE + WISHLIST
+// =============================================
 
-
-// ==========================================
-// SUPABASE CONFIGURATION
-// ==========================================
-
+// YOUR EXISTING SUPABASE PROJECT
 const SUPABASE_URL = "https://ixcvfcismkqwjpubbbpm.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_fitSTyWCaLGS9lQXonwQJw_liwfZLi3";
-
-if (!window.supabase) {
-    throw new Error("Supabase library did not load. Check your internet connection.");
-}
+const SUPABASE_ANON_KEY = "sb_publishable_fitSTYwCaLGS9lQXonwQJw_liwfZLi3";
 
 const db = window.supabase.createClient(
     SUPABASE_URL,
     SUPABASE_ANON_KEY
 );
 
-
-// ==========================================
-// GLOBAL VARIABLES
-// ==========================================
+// =============================================
+// APP STATE
+// =============================================
 
 let debts = [];
 let payments = [];
+let wishlist = [];
+let transactions = [];
+let savingsGoals = [];
 
-let viewDate = new Date();
-let selectedDate = dateKey(new Date());
+let calendarDate = new Date();
+let selectedDate = dateString(new Date());
+let editingWishlistId = null;
+let soundEnabled = false;
+
+// =============================================
+// HELPERS
+// =============================================
 
 const $ = id => document.getElementById(id);
 
-const CATEGORIES = {
-    atomepaylater: "Atome PayLater",
-    atomecard: "Atome Card",
-    atomeloan: "Atome Loan",
-    spaylater: "SPayLater",
-    sloan: "SLoan",
-    tiktokpaylater: "TikTok PayLater",
-    tiktokloan: "TikTok Loan"
-};
-
-
-// ==========================================
-// DATE AND DISPLAY HELPERS
-// ==========================================
-
-function dateKey(date) {
-    const d = new Date(date);
-
-    return [
-        d.getFullYear(),
-        String(d.getMonth() + 1).padStart(2, "0"),
-        String(d.getDate()).padStart(2, "0")
-    ].join("-");
-}
-
-
-function parseDate(key) {
-    const [year, month, day] = key.split("-").map(Number);
-    return new Date(year, month - 1, day);
-}
-
-
-function parseDisplayDate(value) {
-    const match = String(value).trim().match(
-        /^(\d{2})\/(\d{2})\/(\d{4})$/
-    );
-
-    if (!match) return null;
-
-    const day = Number(match[1]);
-    const month = Number(match[2]);
-    const year = Number(match[3]);
-
-    const date = new Date(year, month - 1, day);
-
-    if (
-        date.getFullYear() !== year ||
-        date.getMonth() !== month - 1 ||
-        date.getDate() !== day
-    ) {
-        return null;
-    }
-
-    return dateKey(date);
-}
-
-
-function formatDate(key) {
-    if (!key) return "-";
-
-    const [year, month, day] = key.split("-");
-    return `${day}/${month}/${year}`;
-}
-
-
-function dayDiff(key) {
-    const today = parseDate(dateKey(new Date()));
-
-    return Math.round(
-        (parseDate(key) - today) / 86400000
-    );
-}
-
-
-function monthName(date) {
-    return date.toLocaleDateString("en-MY", {
-        month: "long",
-        year: "numeric"
-    });
-}
-
-
-function money(value) {
-    return "RM " + Number(value || 0).toLocaleString("en-MY", {
+const money = value =>
+    "RM " + Number(value || 0).toLocaleString("en-MY", {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2
     });
+
+const number = value => Number(value || 0);
+
+function dateString(date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const d = String(date.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
 }
 
+function parseDate(value) {
+    if (!value) return null;
+    const parts = value.slice(0, 10).split("-").map(Number);
+    return new Date(parts[0], parts[1] - 1, parts[2]);
+}
 
-function escapeHtml(value) {
+function escapeHTML(value) {
     return String(value ?? "").replace(/[&<>"']/g, char => ({
         "&": "&amp;",
         "<": "&lt;",
         ">": "&gt;",
         '"': "&quot;",
-        "'": "&#39;"
-    }[char]));
+        "'": "&#039;"
+    })[char]);
 }
 
+function showMessage(id, message, isError = false) {
+    const element = $(id);
+    if (!element) return;
 
-function categoryName(category) {
-    return CATEGORIES[category] || category;
+    element.textContent = message;
+    element.style.color = isError ? "#dc777f" : "#45a982";
 }
 
-
-// ==========================================
-// PERSON HELPERS
-// ==========================================
-
-// Old database values (Baby and Sayang) are still supported.
-// They will appear in the website as Eisya and Capiq.
-
-function normalisePerson(person) {
-    const value = String(person || "").trim().toLowerCase();
-
-    if (value === "baby" || value === "eisya") return "Eisya";
-    if (value === "sayang" || value === "capiq") return "Capiq";
-
-    return "Everyone";
-}
-
-
-// Keep the existing CSS colour classes to avoid breaking the design.
-
-function personClass(person) {
-    const value = normalisePerson(person);
-
-    if (value === "Eisya") return "baby";
-    if (value === "Capiq") return "sayang";
-
-    return "everyone";
-}
-
-
-// ==========================================
-// CONNECTION STATUS
-// ==========================================
-
-function setConnection(message, status = "") {
+function setConnection(online, message) {
     $("connectionStatus").textContent = message;
-    $("connectionStatus").className =
-        `connection ${status}`.trim();
+    $("connectionDot").className =
+        "status-dot " + (online ? "online" : "offline");
 }
 
+function playSound() {
+    if (!soundEnabled) return;
 
-function showMessage(message, error = false) {
-    $("formMessage").textContent = message;
-    $("formMessage").className =
-        error ? "form-message error" : "form-message";
-}
-
-
-// ==========================================
-// PAYMENT SCHEDULE
-// ==========================================
-
-function occurrences(debt) {
-    const first = parseDate(debt.first_due_date);
-    const result = [];
-
-    for (let i = 0; i < Number(debt.months); i++) {
-        const targetMonth = new Date(
-            first.getFullYear(),
-            first.getMonth() + i,
-            1
-        );
-
-        const lastDay = new Date(
-            targetMonth.getFullYear(),
-            targetMonth.getMonth() + 1,
-            0
-        ).getDate();
-
-        const due = new Date(
-            targetMonth.getFullYear(),
-            targetMonth.getMonth(),
-            Math.min(first.getDate(), lastDay)
-        );
-
-        result.push({
-            debt,
-            dueDate: dateKey(due),
-            amount: Number(debt.amount)
-        });
-    }
-
-    return result;
-}
-
-
-function allOccurrences() {
-    return debts.flatMap(debt => occurrences(debt));
-}
-
-
-function getPayment(debtId, dueDate) {
-    return payments.find(payment =>
-        String(payment.debt_id) === String(debtId) &&
-        payment.due_date === dueDate
-    );
-}
-
-
-function getPaymentStatus(debtId, dueDate) {
-    const payment = getPayment(debtId, dueDate);
-
-    if (payment?.paid === true) return "paid";
-
-    if (dueDate < dateKey(new Date())) return "overdue";
-
-    return "unpaid";
-}
-
-
-function getRemainingEvents(list = allOccurrences()) {
-    return list.filter(event =>
-        getPaymentStatus(event.debt.id, event.dueDate) !== "paid"
-    );
-}
-
-
-function getRemainingAmount(list = allOccurrences()) {
-    return getRemainingEvents(list).reduce(
-        (total, event) => total + Number(event.amount || 0),
-        0
-    );
-}
-
-
-// ==========================================
-// LOAD DATABASE DATA
-// ==========================================
-
-async function loadData() {
     try {
-        setConnection("Connecting...");
+        const audio = new AudioContext();
+        const oscillator = audio.createOscillator();
+        const gain = audio.createGain();
 
-        if (!SUPABASE_ANON_KEY) {
-            throw new Error("Please configure your Supabase key in app.js.");
-        }
+        oscillator.connect(gain);
+        gain.connect(audio.destination);
 
-        const [debtResult, paymentResult] = await Promise.all([
-            db.from("debts")
-                .select("*")
-                .order("created_at", { ascending: false }),
+        oscillator.frequency.value = 660;
+        gain.gain.value = 0.035;
 
-            db.from("debt_payments")
-                .select("*")
-        ]);
-
-        if (debtResult.error) {
-            throw new Error(
-                "DEBTS TABLE: " + debtResult.error.message
-            );
-        }
-
-        if (paymentResult.error) {
-            throw new Error(
-                "PAYMENTS TABLE: " + paymentResult.error.message
-            );
-        }
-
-        debts = debtResult.data || [];
-        payments = paymentResult.data || [];
-
-        setConnection("Live · Perhutangan", "online");
-
-        console.log("SUPABASE CONNECTED");
-        console.log("DEBTS:", debts);
-        console.log("PAYMENTS:", payments);
-
-        render();
-
+        oscillator.start();
+        oscillator.stop(audio.currentTime + 0.08);
+        oscillator.onended = () => audio.close();
     } catch (error) {
-        console.error("DATABASE ERROR:", error);
-
-        setConnection("Connection error", "offline");
-
-        $("debtList").innerHTML =
-            `<p class="error-text">${escapeHtml(error.message)}</p>`;
-
-        showMessage(error.message, true);
+        console.warn("Sound unavailable", error);
     }
 }
 
+function todayString() {
+    return dateString(new Date());
+}
 
-// ==========================================
-// MAIN RENDER
-// ==========================================
-
-function render() {
-    const events = allOccurrences();
-
-    // All unpaid instalments across every month.
-    const allRemaining = getRemainingEvents(events);
-
-    // Selected calendar month.
-    const monthKey =
-        `${viewDate.getFullYear()}-${String(viewDate.getMonth() + 1).padStart(2, "0")}`;
-
-    const monthEvents = events.filter(event =>
-        event.dueDate.startsWith(monthKey)
+function addMonthsClamped(date, months) {
+    const result = new Date(
+        date.getFullYear(),
+        date.getMonth() + months,
+        1
     );
 
-    const monthRemaining = getRemainingEvents(monthEvents);
-
-
-    // ======================================
-    // BOX 1: ACTIVE DEBTS THIS MONTH
-    // ======================================
-
-    const monthActiveDebts = new Set(
-        monthEvents.map(event => String(event.debt.id))
-    ).size;
-
-    $("monthActiveCount").textContent = monthActiveDebts;
-
-
-    // ======================================
-    // BOX 2: DUE THIS MONTH
-    // ======================================
-
-    $("monthTotal").textContent =
-        money(getRemainingAmount(monthEvents));
-
-    $("monthCount").textContent =
-        `${monthRemaining.length} remaining instalments`;
-
-
-    // ======================================
-    // BOX 3: OVERALL ACTIVE DEBTS
-    // ======================================
-
-    $("overallActiveCount").textContent =
-        allRemaining.length;
-
-
-    // ======================================
-    // BOX 4: OVERALL TOTAL OUTSTANDING DEBT
-    // ======================================
-
-    $("overallDebt").textContent =
-        money(getRemainingAmount(events));
-
-    $("overallInstallments").textContent =
-        `${allRemaining.length} remaining instalments`;
-
-
-    // ======================================
-    // UPCOMING PAYMENTS IN 7 DAYS
-    // ======================================
-
-    const upcoming = allRemaining.filter(event => {
-        const difference = dayDiff(event.dueDate);
-
-        return difference >= 0 && difference <= 7;
-    });
-
-
-    // ======================================
-    // ALL DEBTS COUNT
-    // ======================================
-
-    $("debtListCount").textContent =
-        `${debts.length} debts`;
-
-
-    // ======================================
-    // RENDER ALL SECTIONS
-    // ======================================
-
-    renderPersonSummaries(events);
-    renderMonthlyPersonBreakdown(monthEvents);
-    renderCalendar(events);
-    renderUpcomingReminders(upcoming);
-    renderSelectedDate(events);
-    renderDebtList();
-}
-
-
-// ==========================================
-// OVERALL PERSON TOTALS (ALL MONTHS)
-// ==========================================
-
-function renderPersonSummaries(events) {
-    const people = [
-        { name: "Eisya", prefix: "eisya" },
-        { name: "Capiq", prefix: "capiq" },
-        { name: "Everyone", prefix: "everyone" }
-    ];
-
-    people.forEach(({ name, prefix }) => {
-        const personEvents = events.filter(event =>
-            normalisePerson(event.debt.person) === name
-        );
-
-        const remaining = getRemainingEvents(personEvents);
-
-        const total = remaining.reduce(
-            (sum, event) => sum + Number(event.amount || 0),
-            0
-        );
-
-        $(`${prefix}Outstanding`).textContent = money(total);
-
-        $(`${prefix}Installments`).textContent =
-            `${remaining.length} remaining instalments`;
-    });
-}
-
-
-// ==========================================
-// SELECTED MONTH PERSON BREAKDOWN
-// ==========================================
-
-function renderMonthlyPersonBreakdown(monthEvents) {
-    const monthLabel = monthName(viewDate);
-
-    $("monthlyBreakdownLabel").textContent =
-        `${monthLabel} · unpaid instalments only`;
-
-    const people = [
-        { name: "Eisya", prefix: "monthEisya" },
-        { name: "Capiq", prefix: "monthCapiq" },
-        { name: "Everyone", prefix: "monthEveryone" }
-    ];
-
-    people.forEach(({ name, prefix }) => {
-        const personEvents = monthEvents.filter(event =>
-            normalisePerson(event.debt.person) === name
-        );
-
-        const remaining = getRemainingEvents(personEvents);
-
-        const total = remaining.reduce(
-            (sum, event) => sum + Number(event.amount || 0),
-            0
-        );
-
-        $(`${prefix}Outstanding`).textContent = money(total);
-
-        $(`${prefix}Installments`).textContent =
-            `${remaining.length} remaining instalments`;
-    });
-}
-
-
-// ==========================================
-// CALENDAR
-// ==========================================
-
-function renderCalendar(events) {
-    $("monthYear").textContent = monthName(viewDate);
-
-    const year = viewDate.getFullYear();
-    const month = viewDate.getMonth();
-
-    const firstDay = new Date(year, month, 1).getDay();
-
-    const totalDays = new Date(
-        year,
-        month + 1,
+    const lastDay = new Date(
+        result.getFullYear(),
+        result.getMonth() + 1,
         0
     ).getDate();
 
-    const today = dateKey(new Date());
+    result.setDate(Math.min(date.getDate(), lastDay));
+    return result;
+}
 
-    let html = "";
+// =============================================
+// DATABASE
+// =============================================
 
-    for (let i = 0; i < firstDay; i++) {
-        html += `<div class="day empty"></div>`;
+async function loadData() {
+    setConnection(false, "Loading...");
+
+    try {
+        const results = await Promise.all([
+            db.from("debts").select("*").order("created_at", { ascending: false }),
+            db.from("debt_payments").select("*"),
+            db.from("wishlist_items").select("*").order("created_at", { ascending: false }),
+            db.from("money_transactions").select("*").order("transaction_date", { ascending: false }),
+            db.from("savings_goals").select("*").order("created_at", { ascending: false })
+        ]);
+
+        const errors = results.filter(result => result.error);
+
+        if (errors.length) {
+            throw errors[0].error;
+        }
+
+        debts = results[0].data || [];
+        payments = results[1].data || [];
+        wishlist = results[2].data || [];
+        transactions = results[3].data || [];
+        savingsGoals = results[4].data || [];
+
+        // Display old names using the current names.
+        debts = debts.map(debt => ({
+            ...debt,
+            person: normalizePerson(debt.person)
+        }));
+
+        setConnection(true, "Connected · Live");
+        renderEverything();
+
+    } catch (error) {
+        console.error("Database error:", error);
+        setConnection(false, "Connection error");
+        alert(
+            "Unable to load your data.\n\n" +
+            (error.message || "Please check your Supabase database and connection.")
+        );
     }
+}
 
-    for (let day = 1; day <= totalDays; day++) {
-        const key = dateKey(new Date(year, month, day));
+function normalizePerson(person) {
+    if (person === "Baby") return "Eisya";
+    if (person === "Sayang") return "Capiq";
+    return person || "Everyone";
+}
 
-        const dayEvents = events.filter(event =>
-            event.dueDate === key
+async function insertRow(table, data) {
+    const { error } = await db.from(table).insert(data);
+    if (error) throw error;
+}
+
+async function updateRow(table, id, data) {
+    const { error } = await db.from(table).update(data).eq("id", id);
+    if (error) throw error;
+}
+
+async function deleteRow(table, id) {
+    const { error } = await db.from(table).delete().eq("id", id);
+    if (error) throw error;
+}
+
+// =============================================
+// NAVIGATION
+// =============================================
+
+document.querySelectorAll(".nav-btn").forEach(button => {
+    button.addEventListener("click", () => {
+        document.querySelectorAll(".nav-btn").forEach(btn =>
+            btn.classList.remove("active")
         );
 
-        const classes = [
-            "day",
-            key === today ? "today" : "",
-            key === selectedDate ? "selected" : ""
-        ].filter(Boolean).join(" ");
+        document.querySelectorAll(".page").forEach(page =>
+            page.classList.remove("active")
+        );
 
-        const chips = dayEvents.slice(0, 2).map(event => {
-            const status = getPaymentStatus(
-                event.debt.id,
-                key
-            );
+        button.classList.add("active");
+        $(button.dataset.page).classList.add("active");
 
-            return `
-                <div class="day-chip ${status} ${personClass(event.debt.person)}">
-                    ${escapeHtml(normalisePerson(event.debt.person))}:
-                    ${escapeHtml(categoryName(event.debt.name))}
-                </div>
-            `;
-        }).join("");
+        if (button.dataset.page === "dashboard") {
+            drawCharts();
+        }
+    });
+});
 
-        html += `
-            <button
-                type="button"
-                class="${classes}"
-                data-date="${key}"
-            >
-                <span class="day-number">${day}</span>
+// =============================================
+// DEBT SCHEDULE
+// =============================================
 
-                <div class="day-events">
-                    ${chips}
-                    ${
-                        dayEvents.length > 2
-                            ? `<span class="more-chip">+${dayEvents.length - 2} more</span>`
-                            : ""
-                    }
-                </div>
-            </button>
-        `;
-    }
+function getDebtSchedule(debt) {
+    const firstDate = parseDate(debt.first_due_date);
+    if (!firstDate) return [];
 
-    $("calendar").innerHTML = html;
+    const months = Math.max(0, number(debt.months));
 
-    $("calendar").querySelectorAll("[data-date]").forEach(button => {
-        button.addEventListener("click", () => {
-            selectedDate = button.dataset.date;
-            render();
-        });
+    return Array.from({ length: months }, (_, index) => {
+        const due = addMonthsClamped(firstDate, index);
+
+        const payment = payments.find(item =>
+            item.debt_id === debt.id &&
+            item.due_date === dateString(due)
+        );
+
+        return {
+            debt,
+            date: dateString(due),
+            amount: number(debt.amount),
+            paid: Boolean(payment?.paid),
+            paymentId: payment?.id || null
+        };
     });
 }
 
+function allInstallments() {
+    return debts.flatMap(getDebtSchedule);
+}
 
-// ==========================================
-// UPCOMING PAYMENT REMINDERS
-// ==========================================
+function remainingInstallments(debt) {
+    return getDebtSchedule(debt).filter(item => !item.paid);
+}
 
-function renderUpcomingReminders(upcoming) {
-    const container = $("upcomingReminderList");
+function remainingDebtAmount(debt) {
+    return remainingInstallments(debt)
+        .reduce((sum, item) => sum + item.amount, 0);
+}
 
-    $("reminderCount").textContent =
-        `${upcoming.length} payments`;
+function debtOutstandingForPerson(person) {
+    return debts
+        .filter(debt => debt.person === person)
+        .reduce((sum, debt) => sum + remainingDebtAmount(debt), 0);
+}
 
-    if (!upcoming.length) {
-        container.innerHTML =
-            `<p class="muted">No upcoming payments in the next 7 days ♡</p>`;
+function renderDebtSummary() {
+    const schedule = allInstallments();
+    const outstanding = schedule
+        .filter(item => !item.paid)
+        .reduce((sum, item) => sum + item.amount, 0);
+
+    const active = debts.filter(debt =>
+        remainingInstallments(debt).length > 0
+    );
+
+    $("debtOutstanding").textContent = money(outstanding);
+    $("debtActiveCount").textContent = active.length;
+    $("debtRemainingCount").textContent =
+        schedule.filter(item => !item.paid).length;
+
+    $("dashDebt").textContent = money(outstanding);
+    $("dashDebtCount").textContent = `${active.length} active debts`;
+
+    $("dashEisya").textContent = money(debtOutstandingForPerson("Eisya"));
+    $("dashCapiq").textContent = money(debtOutstandingForPerson("Capiq"));
+    $("dashEveryone").textContent = money(debtOutstandingForPerson("Everyone"));
+}
+
+// =============================================
+// ADD DEBT
+// =============================================
+
+$("debtForm").addEventListener("submit", async event => {
+    event.preventDefault();
+
+    const person = $("debtPerson").value;
+    const name = $("debtName").value;
+    const amount = number($("debtAmount").value);
+    const months = Math.floor(number($("debtMonths").value));
+    const firstDate = $("debtDate").value;
+    const note = $("debtNote").value.trim();
+
+    if (!amount || amount <= 0 || months < 1 || !firstDate) {
+        showMessage("debtMessage", "Please check all required fields.", true);
         return;
     }
 
-    const sorted = [...upcoming].sort((a, b) =>
-        a.dueDate.localeCompare(b.dueDate)
-    );
+    try {
+        await insertRow("debts", {
+            person,
+            name,
+            amount,
+            months,
+            first_due_date: firstDate,
+            note
+        });
 
-    container.innerHTML = sorted.map(event => {
-        const difference = dayDiff(event.dueDate);
+        $("debtForm").reset();
+        showMessage("debtMessage", "Debt added successfully!");
+        playSound();
+        await loadData();
 
-        let reminderText;
+    } catch (error) {
+        console.error(error);
+        showMessage("debtMessage", error.message, true);
+    }
+});
 
-        if (difference === 0) {
-            reminderText = "Due today!";
-        } else if (difference === 1) {
-            reminderText = "Due tomorrow";
+// =============================================
+// DELETE DEBT
+// =============================================
+
+async function deleteDebt(id) {
+    if (!confirm("Delete this debt and its payment records?")) return;
+
+    try {
+        await deleteRow("debts", id);
+        await loadData();
+    } catch (error) {
+        alert(error.message);
+    }
+}
+
+// =============================================
+// MARK PAID / UNDO
+// =============================================
+
+async function togglePaid(debtId, dueDate, currentlyPaid) {
+    try {
+        const existing = payments.find(item =>
+            item.debt_id === debtId &&
+            item.due_date === dueDate
+        );
+
+        if (currentlyPaid && existing) {
+            await deleteRow("debt_payments", existing.id);
+        } else if (existing) {
+            await updateRow("debt_payments", existing.id, {
+                paid: true
+            });
         } else {
-            reminderText = `Due in ${difference} days`;
+            await insertRow("debt_payments", {
+                debt_id: debtId,
+                due_date: dueDate,
+                paid: true
+            });
         }
 
-        return `
-            <div class="reminder-item ${personClass(event.debt.person)}">
-                <div class="reminder-info">
-                    <strong>${escapeHtml(categoryName(event.debt.name))}</strong>
-                    <small>
-                        ${escapeHtml(normalisePerson(event.debt.person))}
-                        · ${formatDate(event.dueDate)}
-                    </small>
-                    <span class="reminder-date">${reminderText}</span>
-                </div>
+        playSound();
+        await loadData();
 
-                <strong class="reminder-amount">
-                    ${money(event.amount)}
-                </strong>
+    } catch (error) {
+        alert("Unable to update payment: " + error.message);
+    }
+}
+
+// =============================================
+// ALL DEBTS
+// =============================================
+
+function renderAllDebts() {
+    const search = ($("debtSearch").value || "").toLowerCase();
+
+    const filtered = debts.filter(debt =>
+        String(debt.name).toLowerCase().includes(search) ||
+        String(debt.person).toLowerCase().includes(search)
+    );
+
+    if (!filtered.length) {
+        $("allDebts").innerHTML =
+            '<p class="empty">No matching debts found.</p>';
+        return;
+    }
+
+    $("allDebts").innerHTML = filtered.map(debt => {
+        const remaining = remainingDebtAmount(debt);
+        const remainingCount = remainingInstallments(debt).length;
+
+        return `
+            <div class="list-item">
+                <div class="list-main">
+                    <strong>${escapeHTML(debt.name)}</strong>
+                    <small>
+                        ${escapeHTML(debt.person)} ·
+                        ${remainingCount} instalments remaining ·
+                        ${money(remaining)}
+                    </small>
+                    <small>
+                        First payment: ${escapeHTML(debt.first_due_date)}
+                    </small>
+                </div>
+                <div class="list-actions">
+                    <button class="action-btn danger"
+                        onclick="deleteDebt('${debt.id}')">Delete</button>
+                </div>
             </div>
         `;
     }).join("");
 }
 
+$("debtSearch").addEventListener("input", renderAllDebts);
 
-// ==========================================
-// SELECTED DATE AND OUTSTANDING TOTALS
-// ==========================================
+// =============================================
+// CALENDAR
+// =============================================
 
-function renderSelectedDate(events) {
-    const selected = parseDate(selectedDate);
+function renderCalendar() {
+    const year = calendarDate.getFullYear();
+    const month = calendarDate.getMonth();
+
+    $("calendarMonth").textContent =
+        calendarDate.toLocaleDateString("en-MY", {
+            month: "long",
+            year: "numeric"
+        });
+
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    const headings = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+    let html = headings.map(day =>
+        `<div class="calendar-day heading">${day}</div>`
+    ).join("");
+
+    for (let i = 0; i < firstDay; i++) {
+        html += `<div></div>`;
+    }
+
+    for (let day = 1; day <= daysInMonth; day++) {
+        const current = new Date(year, month, day);
+        const key = dateString(current);
+
+        const items = allInstallments().filter(item => item.date === key);
+
+        const dots = items.map(item => {
+            if (item.paid) return '<i class="dot paid"></i>';
+            if (item.date < todayString()) return '<i class="dot overdue"></i>';
+            return '<i class="dot upcoming"></i>';
+        }).join("");
+
+        const selected = key === selectedDate ? "selected" : "";
+        const today = key === todayString() ? "today" : "";
+
+        html += `
+            <button class="calendar-day ${selected} ${today}"
+                onclick="selectCalendarDate('${key}')">
+                ${day}
+                <div class="day-dots">${dots}</div>
+            </button>
+        `;
+    }
+
+    $("calendar").innerHTML = html;
+}
+
+function selectCalendarDate(date) {
+    selectedDate = date;
+    renderCalendar();
+    renderSelectedPayments();
+}
+
+function renderSelectedPayments() {
+    const items = allInstallments().filter(item =>
+        item.date === selectedDate
+    );
 
     $("selectedDateTitle").textContent =
-        selected.toLocaleDateString("en-MY", {
+        parseDate(selectedDate).toLocaleDateString("en-MY", {
             weekday: "long",
             day: "numeric",
             month: "long",
             year: "numeric"
         });
 
-    const dayEvents = events.filter(event =>
-        event.dueDate === selectedDate
+    const total = items
+        .filter(item => !item.paid)
+        .reduce((sum, item) => sum + item.amount, 0);
+
+    $("selectedDateTotal").textContent = money(total);
+
+    if (!items.length) {
+        $("selectedPayments").innerHTML =
+            '<p class="empty">No payments scheduled for this date.</p>';
+        return;
+    }
+
+    $("selectedPayments").innerHTML = items.map(item => `
+        <div class="list-item">
+            <div class="list-main">
+                <strong>${escapeHTML(item.debt.name)}</strong>
+                <small>
+                    ${escapeHTML(item.debt.person)} ·
+                    ${money(item.amount)}
+                </small>
+                <small>${item.paid ? "Paid" : "Not paid"}</small>
+            </div>
+            <button class="action-btn ${item.paid ? "" : "success"}"
+                onclick="togglePaid('${item.debt.id}','${item.date}',${item.paid})">
+                ${item.paid ? "Undo" : "Mark Paid"}
+            </button>
+        </div>
+    `).join("");
+}
+
+$("calendarPrev").addEventListener("click", () => {
+    calendarDate = new Date(
+        calendarDate.getFullYear(),
+        calendarDate.getMonth() - 1,
+        1
+    );
+    renderCalendar();
+});
+
+$("calendarNext").addEventListener("click", () => {
+    calendarDate = new Date(
+        calendarDate.getFullYear(),
+        calendarDate.getMonth() + 1,
+        1
+    );
+    renderCalendar();
+});
+
+// =============================================
+// WISHLIST
+// =============================================
+
+$("wishlistForm").addEventListener("submit", async event => {
+    event.preventDefault();
+
+    const title = $("wishTitle").value.trim();
+    const category = $("wishCategory").value;
+    const price = number($("wishPrice").value);
+    const saved = number($("wishSavedInput").value);
+
+    if (!title || price < 0 || saved < 0) {
+        showMessage("wishMessage", "Please enter valid details.", true);
+        return;
+    }
+
+    const data = {
+        title,
+        category,
+        price,
+        saved_amount: saved,
+        target_date: $("wishDate").value || null,
+        priority: $("wishPriority").value,
+        image_url: $("wishImage").value.trim() || null,
+        shopping_url: $("wishLink").value.trim() || null,
+        notes: $("wishNotes").value.trim()
+    };
+
+    try {
+        if (editingWishlistId) {
+            await updateRow("wishlist_items", editingWishlistId, data);
+        } else {
+            await insertRow("wishlist_items", data);
+        }
+
+        $("wishlistForm").reset();
+        $("wishSavedInput").value = 0;
+        editingWishlistId = null;
+        $("cancelWishEdit").classList.add("hidden");
+
+        showMessage("wishMessage", "Wishlist saved successfully!");
+        playSound();
+        await loadData();
+
+    } catch (error) {
+        showMessage("wishMessage", error.message, true);
+    }
+});
+
+function editWishlist(id) {
+    const item = wishlist.find(row => row.id === id);
+    if (!item) return;
+
+    editingWishlistId = id;
+
+    $("wishTitle").value = item.title || "";
+    $("wishCategory").value = item.category || "Other";
+    $("wishPrice").value = item.price || 0;
+    $("wishSavedInput").value = item.saved_amount || 0;
+    $("wishDate").value = item.target_date || "";
+    $("wishPriority").value = item.priority || "Medium";
+    $("wishImage").value = item.image_url || "";
+    $("wishLink").value = item.shopping_url || "";
+    $("wishNotes").value = item.notes || "";
+
+    $("cancelWishEdit").classList.remove("hidden");
+    $("wishTitle").scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+$("cancelWishEdit").addEventListener("click", () => {
+    editingWishlistId = null;
+    $("wishlistForm").reset();
+    $("wishSavedInput").value = 0;
+    $("cancelWishEdit").classList.add("hidden");
+});
+
+async function deleteWishlist(id) {
+    if (!confirm("Delete this wishlist item?")) return;
+
+    try {
+        await deleteRow("wishlist_items", id);
+        await loadData();
+    } catch (error) {
+        alert(error.message);
+    }
+}
+
+async function markPurchased(id) {
+    const item = wishlist.find(row => row.id === id);
+    if (!item) return;
+
+    try {
+        await updateRow("wishlist_items", id, {
+            purchased: !item.purchased
+        });
+        await loadData();
+    } catch (error) {
+        alert(error.message);
+    }
+}
+
+async function updateWishlistSaved(id) {
+    const item = wishlist.find(row => row.id === id);
+    if (!item) return;
+
+    const value = prompt(
+        "Enter your total saved amount (RM):",
+        item.saved_amount || 0
     );
 
-    const container = $("selectedPaymentsList");
+    if (value === null) return;
 
+    const amount = Number(value);
 
-    // ======================================
-    // OUTSTANDING THIS DAY
-    // ======================================
+    if (!Number.isFinite(amount) || amount < 0) {
+        alert("Please enter a valid amount.");
+        return;
+    }
 
-    const dailyRemaining = getRemainingEvents(dayEvents);
+    try {
+        await updateRow("wishlist_items", id, {
+            saved_amount: amount
+        });
+        await loadData();
+    } catch (error) {
+        alert(error.message);
+    }
+}
 
-    const dailyOutstanding = dailyRemaining.reduce(
-        (sum, event) => sum + Number(event.amount || 0),
-        0
+function renderWishlist() {
+    const search = ($("wishSearch").value || "").toLowerCase();
+    const category = $("wishFilter").value;
+    const sort = $("wishSort").value;
+
+    $("wishTotal").textContent = money(
+        wishlist.filter(item => !item.purchased)
+            .reduce((sum, item) => sum + number(item.price), 0)
     );
 
-    $("dailyOutstanding").textContent =
-        money(dailyOutstanding);
+    $("wishSaved").textContent = money(
+        wishlist.reduce((sum, item) => sum + number(item.saved_amount), 0)
+    );
 
-    $("dailyTotalDate").textContent =
-        `${formatDate(selectedDate)} · ${dailyRemaining.length} remaining instalments`;
+    $("wishNeeded").textContent = money(
+        wishlist.filter(item => !item.purchased)
+            .reduce((sum, item) =>
+                sum + Math.max(0, number(item.price) - number(item.saved_amount)), 0)
+    );
 
+    $("wishCount").textContent =
+        wishlist.filter(item => !item.purchased).length;
 
-    // ======================================
-    // DISPLAY PAYMENTS FOR SELECTED DATE
-    // ======================================
+    let filtered = wishlist.filter(item => {
+        const matchesSearch =
+            String(item.title).toLowerCase().includes(search) ||
+            String(item.category).toLowerCase().includes(search);
 
-    if (!dayEvents.length) {
-        container.innerHTML =
-            `<p class="muted">Nothing scheduled for this date ♡</p>`;
+        const matchesCategory =
+            category === "all" || item.category === category;
+
+        return matchesSearch && matchesCategory;
+    });
+
+    if (sort === "price-low") {
+        filtered.sort((a, b) => number(a.price) - number(b.price));
+    } else if (sort === "price-high") {
+        filtered.sort((a, b) => number(b.price) - number(a.price));
+    } else if (sort === "priority") {
+        const rank = { High: 0, Medium: 1, Low: 2 };
+        filtered.sort((a, b) =>
+            (rank[a.priority] ?? 3) - (rank[b.priority] ?? 3)
+        );
     } else {
-        container.innerHTML = dayEvents.map(event => {
-            const status = getPaymentStatus(
-                event.debt.id,
-                event.dueDate
-            );
+        filtered.sort((a, b) =>
+            new Date(b.created_at || 0) - new Date(a.created_at || 0)
+        );
+    }
+
+    if (!filtered.length) {
+        $("wishlistItems").innerHTML =
+            '<p class="empty">No wishlist items found.</p>';
+    } else {
+        $("wishlistItems").innerHTML = filtered.map(item => {
+            const price = number(item.price);
+            const saved = number(item.saved_amount);
+            const percent = price > 0
+                ? Math.min(100, Math.round(saved / price * 100))
+                : 0;
+
+            const image = item.image_url
+                ? `<img class="wish-image" src="${escapeHTML(item.image_url)}" alt="${escapeHTML(item.title)}" loading="lazy" onerror="this.style.display='none'">`
+                : `<div class="wish-image-placeholder">♡</div>`;
 
             return `
-                <div class="payment-row ${personClass(event.debt.person)}">
-                    <div class="payment-info">
-                        <strong>${escapeHtml(categoryName(event.debt.name))}</strong>
-                        <small>
-                            ${escapeHtml(normalisePerson(event.debt.person))}
-                            · ${formatDate(event.dueDate)}
+                <article class="wish-card">
+                    ${image}
+                    <div class="wish-content">
+                        <div class="wish-top">
+                            <span class="tag">${escapeHTML(item.category)}</span>
+                            <span class="tag priority-${String(item.priority || "medium").toLowerCase()}">
+                                ${escapeHTML(item.priority || "Medium")}
+                            </span>
+                        </div>
+
+                        <h3>${escapeHTML(item.title)}</h3>
+                        <div class="wish-price">${money(price)}</div>
+
+                        <div class="progress-caption">
+                            <span>Saved ${money(saved)}</span>
+                            <strong>${percent}%</strong>
+                        </div>
+                        <div class="progress-track">
+                            <div class="progress-fill" style="width:${percent}%"></div>
+                        </div>
+
+                        <div class="progress-caption">
+                            <span>Remaining</span>
+                            <strong>${money(Math.max(0, price - saved))}</strong>
+                        </div>
+
+                        <small class="muted">
+                            Target: ${escapeHTML(item.target_date || "Not set")}
                         </small>
-                        <span class="status-label ${status}">
-                            ${status.toUpperCase()}
-                        </span>
-                    </div>
 
-                    <div class="payment-action">
-                        <strong>${money(event.amount)}</strong>
+                        ${item.notes ? `<p class="muted">${escapeHTML(item.notes)}</p>` : ""}
 
-                        <button
-                            type="button"
-                            class="paid-btn ${status === "paid" ? "undo-btn" : ""}"
-                            data-toggle="${escapeHtml(event.debt.id)}"
-                            data-date="${event.dueDate}"
-                        >
-                            ${status === "paid" ? "Undo" : "Mark Paid"}
-                        </button>
+                        ${item.purchased
+                            ? '<span class="tag">Purchased ✓</span>'
+                            : ""}
+
+                        <div class="wish-actions">
+                            <button class="action-btn"
+                                onclick="updateWishlistSaved('${item.id}')">Update Saved</button>
+                            <button class="action-btn"
+                                onclick="editWishlist('${item.id}')">Edit</button>
+                            <button class="action-btn success"
+                                onclick="markPurchased('${item.id}')">
+                                ${item.purchased ? "Undo Purchase" : "Purchased"}
+                            </button>
+                            ${item.shopping_url
+                                ? `<button class="action-btn" onclick="openShoppingLink('${encodeURIComponent(item.shopping_url)}')">Open Link</button>`
+                                : ""}
+                            <button class="action-btn danger"
+                                onclick="deleteWishlist('${item.id}')">Delete</button>
+                        </div>
                     </div>
-                </div>
+                </article>
             `;
         }).join("");
     }
 
-
-    // ======================================
-    // OUTSTANDING THIS WEEK
-    // ======================================
-
-    // Week starts Sunday and ends Saturday.
-
-    const weekStart = new Date(selected);
-    weekStart.setDate(selected.getDate() - selected.getDay());
-
-    const weekEnd = new Date(weekStart);
-    weekEnd.setDate(weekStart.getDate() + 6);
-
-    const startKey = dateKey(weekStart);
-    const endKey = dateKey(weekEnd);
-
-    const weeklyEvents = events.filter(event =>
-        event.dueDate >= startKey &&
-        event.dueDate <= endKey
-    );
-
-    const weeklyRemaining = getRemainingEvents(weeklyEvents);
-
-    const weeklyOutstanding = weeklyRemaining.reduce(
-        (sum, event) => sum + Number(event.amount || 0),
-        0
-    );
-
-    $("weeklyTotal").innerHTML = `
-        <div>
-            <span>Outstanding this week</span>
-            <small>
-                ${formatDate(startKey)} – ${formatDate(endKey)}
-                · ${weeklyRemaining.length} remaining instalments
-            </small>
-        </div>
-        <strong>${money(weeklyOutstanding)}</strong>
-    `;
-
-
-    // ======================================
-    // MARK PAID / UNDO BUTTONS
-    // ======================================
-
-    container.querySelectorAll("[data-toggle]").forEach(button => {
-        button.addEventListener("click", () => {
-            togglePaid(
-                button.dataset.toggle,
-                button.dataset.date
-            );
-        });
-    });
+    updatePlannerOptions();
 }
 
+function openShoppingLink(encodedUrl) {
+    const url = decodeURIComponent(encodedUrl);
 
-// ==========================================
-// ALL DEBTS AND FILTERS
-// ==========================================
-
-function renderDebtList() {
-    const personFilter = $("personFilter").value;
-    const categoryFilter = $("categoryFilter").value;
-    const dateText = $("debtDateFilter").value.trim();
-
-    let filterDate = "";
-
-    if (dateText) {
-        filterDate = parseDisplayDate(dateText);
-
-        if (!filterDate) {
-            $("debtFilterMessage").textContent =
-                "Please enter a valid date using DD/MM/YYYY.";
-
-            $("filteredOutstanding").textContent =
-                "Date format invalid";
-
-            $("debtList").innerHTML =
-                `<p class="muted">Enter a valid payment date to filter.</p>`;
-
-            return;
+    try {
+        const parsed = new URL(url);
+        if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+            throw new Error("Invalid link");
         }
+        window.open(parsed.href, "_blank", "noopener,noreferrer");
+    } catch {
+        alert("This shopping link is not valid.");
+    }
+}
+
+$("wishSearch").addEventListener("input", renderWishlist);
+$("wishFilter").addEventListener("change", renderWishlist);
+$("wishSort").addEventListener("change", renderWishlist);
+
+// =============================================
+// WISHLIST SAVINGS PLANNER
+// =============================================
+
+function updatePlannerOptions() {
+    const select = $("plannerItem");
+    const previous = select.value;
+
+    select.innerHTML =
+        '<option value="">Choose wishlist item</option>' +
+        wishlist.filter(item => !item.purchased).map(item =>
+            `<option value="${item.id}">${escapeHTML(item.title)}</option>`
+        ).join("");
+
+    if (wishlist.some(item => item.id === previous)) {
+        select.value = previous;
     }
 
-    let displayedDebts = [...debts];
+    calculatePlanner();
+}
 
+function calculatePlanner() {
+    const item = wishlist.find(row => row.id === $("plannerItem").value);
 
-    // FILTER BY PERSON
-
-    if (personFilter !== "all") {
-        displayedDebts = displayedDebts.filter(debt =>
-            normalisePerson(debt.person) === personFilter
-        );
-    }
-
-
-    // FILTER BY CATEGORY
-
-    if (categoryFilter !== "all") {
-        displayedDebts = displayedDebts.filter(debt =>
-            debt.name === categoryFilter
-        );
-    }
-
-
-    // FILTER BY PAYMENT DATE
-
-    if (filterDate) {
-        displayedDebts = displayedDebts.filter(debt =>
-            occurrences(debt).some(event =>
-                event.dueDate === filterDate
-            )
-        );
-    }
-
-
-    const displayedEvents = displayedDebts.flatMap(debt =>
-        occurrences(debt)
-    );
-
-    const displayedRemaining = getRemainingEvents(displayedEvents);
-
-    const outstanding = displayedRemaining.reduce(
-        (total, event) => total + Number(event.amount || 0),
-        0
-    );
-
-    $("filteredOutstanding").textContent =
-        `${money(outstanding)} outstanding`;
-
-    $("debtListCount").textContent =
-        `${displayedDebts.length} debts`;
-
-
-    const descriptions = [];
-
-    if (personFilter !== "all") {
-        descriptions.push(personFilter);
-    }
-
-    if (categoryFilter !== "all") {
-        descriptions.push(categoryName(categoryFilter));
-    }
-
-    if (filterDate) {
-        descriptions.push(formatDate(filterDate));
-    }
-
-    $("debtFilterMessage").textContent =
-        descriptions.length
-            ? `Showing: ${descriptions.join(" · ")}`
-            : "Showing all our debts.";
-
-
-    if (!displayedDebts.length) {
-        $("debtList").innerHTML =
-            `<p class="muted">No debts match these filters.</p>`;
+    if (!item) {
+        $("plannerRemaining").textContent = money(0);
+        $("plannerMonthly").textContent = money(0);
+        $("plannerMessage").textContent = "Choose an item to calculate.";
         return;
     }
 
+    const remaining = Math.max(
+        0,
+        number(item.price) - number(item.saved_amount)
+    );
 
-    // DISPLAY ALL DEBT CARDS
+    $("plannerRemaining").textContent = money(remaining);
 
-    $("debtList").innerHTML = displayedDebts.map(debt => {
+    if (!item.target_date) {
+        $("plannerMonthly").textContent = "Set a target date";
+        $("plannerMessage").textContent =
+            "Edit this wishlist item and add a target purchase date.";
+        return;
+    }
 
-        const schedule = occurrences(debt);
+    const today = new Date();
+    const target = parseDate(item.target_date);
 
-        const remaining = getRemainingEvents(schedule);
+    const months = Math.max(
+        1,
+        (target.getFullYear() - today.getFullYear()) * 12 +
+        (target.getMonth() - today.getMonth()) +
+        (target.getDate() > today.getDate() ? 1 : 0)
+    );
 
-        const remainingAmount = remaining.reduce(
-            (total, event) => total + Number(event.amount || 0),
-            0
-        );
+    $("plannerMonthly").textContent = money(remaining / months);
+    $("plannerMessage").textContent =
+        `Estimated monthly savings over ${months} month(s).`;
+}
 
-        const paidCount = schedule.length - remaining.length;
+$("plannerItem").addEventListener("change", calculatePlanner);
 
-        const overdueCount = remaining.filter(event =>
-            getPaymentStatus(debt.id, event.dueDate) === "overdue"
-        ).length;
+// =============================================
+// WISHLIST EXPORT
+// =============================================
 
-        // Last scheduled instalment date.
+$("exportWishlist").addEventListener("click", () => {
+    const data = JSON.stringify(wishlist, null, 2);
+    const blob = new Blob([data], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
 
-        const lastPayment = schedule.length
-            ? schedule[schedule.length - 1].dueDate
-            : null;
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "perhutangan-wishlist.json";
+    link.click();
 
-        const person = personClass(debt.person);
-        const displayPerson = normalisePerson(debt.person);
+    URL.revokeObjectURL(url);
+});
 
-        const progress = schedule.length
-            ? (paidCount / schedule.length) * 100
+// =============================================
+// INCOME AND EXPENSES
+// =============================================
+
+$("transactionDate").value = todayString();
+
+$("transactionForm").addEventListener("submit", async event => {
+    event.preventDefault();
+
+    const data = {
+        type: $("transactionType").value,
+        title: $("transactionTitle").value.trim(),
+        category: $("transactionCategory").value.trim() || "Other",
+        amount: number($("transactionAmount").value),
+        transaction_date: $("transactionDate").value,
+        notes: $("transactionNote").value.trim()
+    };
+
+    if (!data.title || data.amount <= 0 || !data.transaction_date) {
+        showMessage("transactionMessage", "Please check your transaction details.", true);
+        return;
+    }
+
+    try {
+        await insertRow("money_transactions", data);
+        $("transactionForm").reset();
+        $("transactionDate").value = todayString();
+        showMessage("transactionMessage", "Transaction saved!");
+        playSound();
+        await loadData();
+    } catch (error) {
+        showMessage("transactionMessage", error.message, true);
+    }
+});
+
+async function deleteTransaction(id) {
+    if (!confirm("Delete this transaction?")) return;
+
+    try {
+        await deleteRow("money_transactions", id);
+        await loadData();
+    } catch (error) {
+        alert(error.message);
+    }
+}
+
+function currentMonthTransactions() {
+    const month = todayString().slice(0, 7);
+
+    return transactions.filter(item =>
+        String(item.transaction_date).slice(0, 7) === month
+    );
+}
+
+function renderTransactions() {
+    const search = ($("transactionSearch").value || "").toLowerCase();
+
+    const filtered = transactions.filter(item =>
+        String(item.title).toLowerCase().includes(search) ||
+        String(item.category).toLowerCase().includes(search)
+    );
+
+    if (!filtered.length) {
+        $("transactionList").innerHTML =
+            '<p class="empty">No transactions found.</p>';
+        return;
+    }
+
+    $("transactionList").innerHTML = filtered.map(item => `
+        <div class="list-item">
+            <div class="list-main">
+                <strong>${escapeHTML(item.title)}</strong>
+                <small>
+                    ${escapeHTML(item.category)} ·
+                    ${escapeHTML(item.transaction_date)}
+                </small>
+                <small>${escapeHTML(item.type)}</small>
+            </div>
+            <div class="list-actions">
+                <strong style="color:${item.type === "Income" ? "#45a982" : "#dc777f"}">
+                    ${item.type === "Income" ? "+" : "-"}${money(item.amount)}
+                </strong>
+                <button class="action-btn danger"
+                    onclick="deleteTransaction('${item.id}')">Delete</button>
+            </div>
+        </div>
+    `).join("");
+}
+
+$("transactionSearch").addEventListener("input", renderTransactions);
+
+// =============================================
+// SAVINGS GOALS
+// =============================================
+
+$("savingsForm").addEventListener("submit", async event => {
+    event.preventDefault();
+
+    const data = {
+        title: $("savingTitle").value.trim(),
+        target_amount: number($("savingTarget").value),
+        saved_amount: number($("savingCurrent").value),
+        target_date: $("savingDate").value || null,
+        notes: $("savingNote").value.trim()
+    };
+
+    if (!data.title || data.target_amount <= 0 || data.saved_amount < 0) {
+        showMessage("savingMessage", "Please enter valid amounts.", true);
+        return;
+    }
+
+    try {
+        await insertRow("savings_goals", data);
+        $("savingsForm").reset();
+        $("savingCurrent").value = 0;
+        showMessage("savingMessage", "Savings goal created!");
+        playSound();
+        await loadData();
+    } catch (error) {
+        showMessage("savingMessage", error.message, true);
+    }
+});
+
+async function updateSavings(id) {
+    const goal = savingsGoals.find(item => item.id === id);
+    if (!goal) return;
+
+    const value = prompt(
+        "Enter your updated savings amount (RM):",
+        goal.saved_amount
+    );
+
+    if (value === null) return;
+
+    const amount = Number(value);
+
+    if (!Number.isFinite(amount) || amount < 0) {
+        alert("Please enter a valid amount.");
+        return;
+    }
+
+    try {
+        await updateRow("savings_goals", id, {
+            saved_amount: amount
+        });
+        await loadData();
+    } catch (error) {
+        alert(error.message);
+    }
+}
+
+async function deleteSavings(id) {
+    if (!confirm("Delete this savings goal?")) return;
+
+    try {
+        await deleteRow("savings_goals", id);
+        await loadData();
+    } catch (error) {
+        alert(error.message);
+    }
+}
+
+function renderSavings() {
+    if (!savingsGoals.length) {
+        $("savingsList").innerHTML =
+            '<p class="empty">You have no savings goals yet.</p>';
+        return;
+    }
+
+    $("savingsList").innerHTML = savingsGoals.map(goal => {
+        const target = number(goal.target_amount);
+        const saved = number(goal.saved_amount);
+        const percent = target > 0
+            ? Math.min(100, Math.round(saved / target * 100))
             : 0;
 
         return `
-            <article class="debt-card ${person}">
+            <article class="saving-card">
+                <div class="wish-content">
+                    <span class="tag">Savings Goal</span>
+                    <h3>${escapeHTML(goal.title)}</h3>
+                    <div class="wish-price">${money(target)}</div>
 
-                <div class="debt-card-top">
-
-                    <div>
-
-                        <span class="person-tag ${person}-tag">
-                            ${escapeHtml(displayPerson)}
-                        </span>
-
-                        <h3 class="debt-name">
-                            ${escapeHtml(categoryName(debt.name))}
-                        </h3>
-
-                        <p class="debt-owner">
-                            ${Number(debt.months)} monthly instalments
-                        </p>
-
+                    <div class="progress-caption">
+                        <span>Saved ${money(saved)}</span>
+                        <strong>${percent}%</strong>
                     </div>
-
-                    <div class="debt-amount">
-                        ${money(debt.amount)}
-                        <small>per month</small>
-                    </div>
-
-                </div>
-
-                <div class="debt-progress">
-
                     <div class="progress-track">
-                        <div
-                            class="progress-fill ${person}"
-                            style="width:${progress}%"
-                        ></div>
+                        <div class="progress-fill" style="width:${percent}%"></div>
                     </div>
 
-                    <div class="progress-labels">
-                        <span>${paidCount} paid</span>
-                        <span>${remaining.length} remaining</span>
+                    <p class="muted">
+                        Remaining: ${money(Math.max(0, target - saved))}
+                    </p>
+                    <p class="muted">
+                        Target date: ${escapeHTML(goal.target_date || "Not set")}
+                    </p>
+
+                    <div class="wish-actions">
+                        <button class="action-btn success"
+                            onclick="updateSavings('${goal.id}')">Update Saved</button>
+                        <button class="action-btn danger"
+                            onclick="deleteSavings('${goal.id}')">Delete</button>
                     </div>
-
                 </div>
-
-                <div class="debt-details">
-                    <span>Remaining amount</span>
-                    <strong>${money(remainingAmount)}</strong>
-                </div>
-
-                <div class="debt-details">
-                    <span>First payment</span>
-                    <span>${formatDate(debt.first_due_date)}</span>
-                </div>
-
-                <div class="debt-details">
-                    <span>Last payment</span>
-                    <span>
-                        ${lastPayment ? formatDate(lastPayment) : "-"}
-                    </span>
-                </div>
-
-                <div class="debt-details">
-
-                    <span>
-                        ${
-                            overdueCount
-                                ? `<strong class="overdue-text">${overdueCount} overdue</strong>`
-                                : "No overdue payments"
-                        }
-                    </span>
-
-                    <button
-                        type="button"
-                        class="delete-btn"
-                        data-delete="${escapeHtml(debt.id)}"
-                    >
-                        Delete
-                    </button>
-
-                </div>
-
-                ${
-                    debt.note
-                        ? `<p class="debt-note">${escapeHtml(debt.note)}</p>`
-                        : ""
-                }
-
             </article>
         `;
-
     }).join("");
+}
 
+// =============================================
+// DASHBOARD CALCULATIONS
+// =============================================
 
-    // DELETE BUTTON EVENTS
+function renderDashboard() {
+    const monthData = currentMonthTransactions();
 
-    $("debtList").querySelectorAll("[data-delete]").forEach(button => {
-        button.addEventListener("click", () => {
-            deleteDebt(button.dataset.delete);
+    const income = monthData
+        .filter(item => item.type === "Income")
+        .reduce((sum, item) => sum + number(item.amount), 0);
+
+    const expenses = monthData
+        .filter(item => item.type === "Expense")
+        .reduce((sum, item) => sum + number(item.amount), 0);
+
+    $("dashIncome").textContent = money(income);
+    $("dashExpenses").textContent = money(expenses);
+    $("dashBalance").textContent = money(income - expenses);
+
+    $("moneyIncome").textContent = money(income);
+    $("moneyExpense").textContent = money(expenses);
+    $("moneyNet").textContent = money(income - expenses);
+
+    $("dashWishCount").textContent =
+        wishlist.filter(item => !item.purchased).length;
+
+    $("dashWishTotal").textContent = money(
+        wishlist.filter(item => !item.purchased)
+            .reduce((sum, item) => sum + number(item.price), 0)
+    );
+
+    $("dashWishSaved").textContent = money(
+        wishlist.reduce((sum, item) => sum + number(item.saved_amount), 0)
+    );
+
+    const upcoming = allInstallments()
+        .filter(item => !item.paid && item.date >= todayString())
+        .sort((a, b) => a.date.localeCompare(b.date))
+        .slice(0, 6);
+
+    if (!upcoming.length) {
+        $("dashboardUpcoming").innerHTML =
+            '<p class="empty">No upcoming payments.</p>';
+    } else {
+        $("dashboardUpcoming").innerHTML = upcoming.map(item => `
+            <div class="list-item">
+                <div class="list-main">
+                    <strong>${escapeHTML(item.debt.name)}</strong>
+                    <small>${escapeHTML(item.debt.person)} · ${item.date}</small>
+                </div>
+                <strong>${money(item.amount)}</strong>
+            </div>
+        `).join("");
+    }
+}
+
+// =============================================
+// CHARTS
+// Native canvas: no chart library required.
+// =============================================
+
+function drawCharts() {
+    drawFinanceChart();
+    drawExpenseChart();
+}
+
+function canvasSetup(id) {
+    const canvas = $(id);
+    if (!canvas) return null;
+
+    const width = Math.max(250, canvas.clientWidth);
+    const height = 230;
+    const ratio = Math.min(window.devicePixelRatio || 1, 2);
+
+    canvas.width = width * ratio;
+    canvas.height = height * ratio;
+    canvas.style.height = height + "px";
+
+    const ctx = canvas.getContext("2d");
+    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+
+    return { ctx, width, height };
+}
+
+function drawFinanceChart() {
+    const setup = canvasSetup("financeChart");
+    if (!setup) return;
+
+    const { ctx, width, height } = setup;
+    ctx.clearRect(0, 0, width, height);
+
+    const months = [];
+
+    for (let i = 5; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(1);
+        date.setMonth(date.getMonth() - i);
+
+        const key = dateString(date).slice(0, 7);
+        const records = transactions.filter(item =>
+            String(item.transaction_date).slice(0, 7) === key
+        );
+
+        months.push({
+            label: date.toLocaleDateString("en-MY", { month: "short" }),
+            income: records.filter(item => item.type === "Income")
+                .reduce((sum, item) => sum + number(item.amount), 0),
+            expense: records.filter(item => item.type === "Expense")
+                .reduce((sum, item) => sum + number(item.amount), 0)
         });
+    }
+
+    const max = Math.max(
+        100,
+        ...months.map(item => Math.max(item.income, item.expense))
+    );
+
+    const left = 12;
+    const right = 12;
+    const top = 18;
+    const bottom = 32;
+    const chartHeight = height - top - bottom;
+    const groupWidth = (width - left - right) / months.length;
+
+    ctx.strokeStyle = "#edf0f7";
+    ctx.fillStyle = "#858ba4";
+    ctx.font = "10px sans-serif";
+
+    for (let i = 0; i <= 3; i++) {
+        const y = top + chartHeight * i / 3;
+        ctx.beginPath();
+        ctx.moveTo(left, y);
+        ctx.lineTo(width - right, y);
+        ctx.stroke();
+    }
+
+    months.forEach((item, index) => {
+        const x = left + index * groupWidth + groupWidth / 2;
+        const barWidth = Math.min(13, groupWidth * .24);
+
+        const incomeHeight = item.income / max * chartHeight;
+        const expenseHeight = item.expense / max * chartHeight;
+
+        ctx.fillStyle = "#8191e8";
+        ctx.fillRect(
+            x - barWidth - 2,
+            top + chartHeight - incomeHeight,
+            barWidth,
+            incomeHeight
+        );
+
+        ctx.fillStyle = "#e8a9c8";
+        ctx.fillRect(
+            x + 2,
+            top + chartHeight - expenseHeight,
+            barWidth,
+            expenseHeight
+        );
+
+        ctx.fillStyle = "#858ba4";
+        ctx.textAlign = "center";
+        ctx.fillText(item.label, x, height - 9);
     });
 }
 
+function drawExpenseChart() {
+    const setup = canvasSetup("expenseChart");
+    if (!setup) return;
 
-// ==========================================
-// MARK PAID / UNDO
-// ==========================================
+    const { ctx, width, height } = setup;
+    ctx.clearRect(0, 0, width, height);
 
-async function togglePaid(debtId, dueDate) {
-    const existing = getPayment(debtId, dueDate);
+    const expenses = currentMonthTransactions()
+        .filter(item => item.type === "Expense");
 
-    try {
-        if (existing?.paid === true) {
+    const categories = {};
 
-            const { error } = await db
-                .from("debt_payments")
-                .delete()
-                .eq("id", existing.id);
+    expenses.forEach(item => {
+        const key = item.category || "Other";
+        categories[key] = (categories[key] || 0) + number(item.amount);
+    });
 
-            if (error) throw error;
+    const entries = Object.entries(categories);
+    const total = entries.reduce((sum, item) => sum + item[1], 0);
 
-        } else if (existing) {
+    const colors = [
+        "#8292e8", "#e7a9c9", "#7ec5aa",
+        "#e8b36e", "#9b91d8", "#82b9d8",
+        "#e58e9c", "#a7b3c7"
+    ];
 
-            const { error } = await db
-                .from("debt_payments")
-                .update({ paid: true })
-                .eq("id", existing.id);
-
-            if (error) throw error;
-
-        } else {
-
-            const { error } = await db
-                .from("debt_payments")
-                .insert({
-                    debt_id: debtId,
-                    due_date: dueDate,
-                    paid: true
-                });
-
-            if (error) throw error;
-        }
-
-        await loadData();
-
-    } catch (error) {
-        console.error(error);
-        alert("Could not update payment: " + error.message);
+    if (!total) {
+        ctx.fillStyle = "#858ba4";
+        ctx.font = "13px sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("No expenses this month", width / 2, height / 2);
+        $("expenseLegend").innerHTML = "";
+        return;
     }
+
+    let start = -Math.PI / 2;
+    const centerX = width / 2;
+    const centerY = height / 2;
+    const radius = Math.min(width * .25, 82);
+
+    entries.forEach(([name, value], index) => {
+        const angle = value / total * Math.PI * 2;
+
+        ctx.beginPath();
+        ctx.moveTo(centerX, centerY);
+        ctx.arc(centerX, centerY, radius, start, start + angle);
+        ctx.closePath();
+        ctx.fillStyle = colors[index % colors.length];
+        ctx.fill();
+
+        start += angle;
+    });
+
+    // White center for a doughnut chart.
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius * .58, 0, Math.PI * 2);
+    ctx.fillStyle = "#ffffff";
+    ctx.fill();
+
+    ctx.fillStyle = "#242943";
+    ctx.font = "bold 12px sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText(money(total), centerX, centerY + 4);
+
+    $("expenseLegend").innerHTML = entries.map(([name, value], index) => `
+        <span>
+            <i style="background:${colors[index % colors.length]}"></i>
+            ${escapeHTML(name)} · ${money(value)}
+        </span>
+    `).join("");
 }
 
+// =============================================
+// RENDER EVERYTHING
+// =============================================
 
-// ==========================================
-// DELETE DEBT
-// ==========================================
+function renderEverything() {
+    renderDebtSummary();
+    renderCalendar();
+    renderSelectedPayments();
+    renderAllDebts();
 
-async function deleteDebt(id) {
-    const confirmed = confirm(
-        "Delete this debt and its payment history?\n\nThis cannot be undone."
-    );
+    renderWishlist();
+    renderTransactions();
+    renderSavings();
 
-    if (!confirmed) return;
-
-    try {
-        const { error: paymentError } = await db
-            .from("debt_payments")
-            .delete()
-            .eq("debt_id", id);
-
-        if (paymentError) throw paymentError;
-
-        const { error: debtError } = await db
-            .from("debts")
-            .delete()
-            .eq("id", id);
-
-        if (debtError) throw debtError;
-
-        await loadData();
-
-    } catch (error) {
-        console.error(error);
-        alert("Could not delete debt: " + error.message);
-    }
+    renderDashboard();
+    drawCharts();
 }
 
+// =============================================
+// SOUND SETTING
+// =============================================
 
-// ==========================================
-// ADD MONTHLY DEBT
-// ==========================================
+$("soundToggle").addEventListener("click", () => {
+    soundEnabled = !soundEnabled;
+    $("soundToggle").textContent =
+        soundEnabled ? "Sound: On" : "Sound: Off";
 
-$("debtForm").addEventListener("submit", async event => {
-    event.preventDefault();
-
-    const formElement = event.currentTarget;
-    const form = new FormData(formElement);
-
-    const dueDate = form.get("first_due_date");
-
-    const record = {
-        person: String(form.get("person") || "").trim(),
-        name: String(form.get("name") || "").trim(),
-        amount: Number(form.get("amount")),
-        months: Number(form.get("months")),
-        first_due_date: dueDate,
-        note: String(form.get("note") || "").trim()
-    };
-
-
-    // VALIDATE PERSON
-
-    if (!["Eisya", "Capiq", "Everyone"].includes(record.person)) {
-        showMessage("Please choose Eisya, Capiq or Everyone.", true);
-        return;
-    }
-
-
-    // VALIDATE CATEGORY
-
-    if (!Object.prototype.hasOwnProperty.call(CATEGORIES, record.name)) {
-        showMessage("Please choose a valid debt category.", true);
-        return;
-    }
-
-
-    // VALIDATE AMOUNT AND MONTHS
-
-    if (
-        !Number.isFinite(record.amount) ||
-        record.amount <= 0 ||
-        !Number.isInteger(record.months) ||
-        record.months < 1 ||
-        record.months > 600
-    ) {
-        showMessage("Please enter a valid amount and number of months.", true);
-        return;
-    }
-
-
-    // VALIDATE FIRST PAYMENT DATE
-
-    if (!dueDate || !/^\d{4}-\d{2}-\d{2}$/.test(dueDate)) {
-        showMessage("Please choose a valid first payment date.", true);
-        return;
-    }
-
-
-    $("submitBtn").disabled = true;
-    showMessage("Saving our debt...");
-
-    try {
-        const { error } = await db
-            .from("debts")
-            .insert(record);
-
-        if (error) throw error;
-
-        formElement.reset();
-
-        showMessage("Added successfully to our little board ♡");
-
-        await loadData();
-
-    } catch (error) {
-        console.error(error);
-        showMessage("Could not save: " + error.message, true);
-
-    } finally {
-        $("submitBtn").disabled = false;
-    }
+    if (soundEnabled) playSound();
 });
 
+// =============================================
+// REFRESH
+// =============================================
 
-// ==========================================
-// CALENDAR NAVIGATION
-// ==========================================
+$("refreshBtn").addEventListener("click", loadData);
 
-$("prevMonth").addEventListener("click", () => {
-    viewDate = new Date(
-        viewDate.getFullYear(),
-        viewDate.getMonth() - 1,
-        1
-    );
-
-    selectedDate = dateKey(viewDate);
-    render();
+// Refresh when returning to the website.
+document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) loadData();
 });
 
+// Redraw charts when the screen changes size.
+let resizeTimeout;
 
-$("nextMonth").addEventListener("click", () => {
-    viewDate = new Date(
-        viewDate.getFullYear(),
-        viewDate.getMonth() + 1,
-        1
-    );
-
-    selectedDate = dateKey(viewDate);
-    render();
+window.addEventListener("resize", () => {
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(drawCharts, 200);
 });
 
-
-// ==========================================
-// FILTER EVENTS
-// ==========================================
-
-$("personFilter").addEventListener("change", renderDebtList);
-
-$("categoryFilter").addEventListener("change", renderDebtList);
-
-$("debtDateFilter").addEventListener("change", renderDebtList);
-
-$("debtDateFilter").addEventListener("input", () => {
-    if (!$("debtDateFilter").value.trim()) {
-        renderDebtList();
-    }
-});
-
-
-$("clearDebtFilter").addEventListener("click", () => {
-    $("personFilter").value = "all";
-    $("categoryFilter").value = "all";
-    $("debtDateFilter").value = "";
-
-    renderDebtList();
-});
-
-
-// ==========================================
+// =============================================
 // START APPLICATION
-// ==========================================
+// =============================================
 
 loadData();

@@ -1,8 +1,9 @@
+
 "use strict";
 
 /* =========================================
    PERHUTANGAN ♡
-   DEBT TRACKER
+   BABY BLUE & WHITE DEBT TRACKER
    ========================================= */
 
 
@@ -10,16 +11,11 @@
    SUPABASE CONFIGURATION
    ========================================= */
 
-const SUPABASE_URL = "https://ixcvfcismkqwjpubbbpm.supabase.co";
+const SUPABASE_URL =
+    "https://ixcvfcismkqwjpubbbpm.supabase.co";
 
 const SUPABASE_ANON_KEY =
     "sb_publishable_fitSTYwCaLGS9lQXonwQJw_liwfZLi3";
-
-if (!window.supabase) {
-    throw new Error(
-        "Supabase library did not load. Check your internet connection."
-    );
-}
 
 const db = window.supabase.createClient(
     SUPABASE_URL,
@@ -31,123 +27,81 @@ const db = window.supabase.createClient(
    APPLICATION STATE
    ========================================= */
 
-// Keep the existing database values unchanged.
-// Sayang = Capiq
-// Baby = Eisya
-// Everyone = Shared (Both)
-
-const PEOPLE = ["Sayang", "Baby", "Everyone"];
-
-const PERSON_LABELS = {
-    Sayang: "Capiq",
-    Baby: "Eisya",
-    Everyone: "Shared (Both)"
-};
-
 let debts = [];
 let payments = [];
 
-let currentMonth = new Date(
-    new Date().getFullYear(),
-    new Date().getMonth(),
+let currentMonth = new Date();
+currentMonth = new Date(
+    currentMonth.getFullYear(),
+    currentMonth.getMonth(),
     1
 );
 
-let selectedDate = dateKey(new Date());
-
-let toastTimeout = null;
-let isLoading = false;
+let selectedDate = localDate(new Date());
+let toastTimer = null;
 
 
 /* =========================================
-   DOM HELPERS
+   HELPERS
    ========================================= */
 
-function $(id) {
-    return document.getElementById(id);
-}
+const $ = id => document.getElementById(id);
 
 function money(value) {
     return new Intl.NumberFormat("en-MY", {
         style: "currency",
-        currency: "MYR"
+        currency: "MYR",
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
     }).format(Number(value) || 0);
 }
 
-function escapeHTML(value) {
-    return String(value ?? "").replace(/[&<>"']/g, character => {
-        const entities = {
-            "&": "&amp;",
-            "<": "&lt;",
-            ">": "&gt;",
-            '"': "&quot;",
-            "'": "&#39;"
-        };
+function localDate(date) {
+    const d = new Date(date);
 
-        return entities[character];
-    });
-}
-
-function displayPerson(person) {
-    return PERSON_LABELS[person] || person || "Unassigned";
-}
-
-function dateKey(date) {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
 
     return `${year}-${month}-${day}`;
 }
 
 function parseDate(value) {
-    if (!value) return null;
-
-    const parts = String(value).split("-").map(Number);
-
-    if (
-        parts.length !== 3 ||
-        parts.some(Number.isNaN) ||
-        parts[0] < 1900 ||
-        parts[1] < 1 ||
-        parts[1] > 12 ||
-        parts[2] < 1 ||
-        parts[2] > 31
-    ) {
-        return null;
-    }
-
-    const date = new Date(parts[0], parts[1] - 1, parts[2]);
-
-    if (
-        date.getFullYear() !== parts[0] ||
-        date.getMonth() !== parts[1] - 1 ||
-        date.getDate() !== parts[2]
-    ) {
-        return null;
-    }
-
-    return date;
+    const [year, month, day] = String(value).split("-").map(Number);
+    return new Date(year, month - 1, day);
 }
 
-function formatDate(value) {
-    const date = parseDate(value);
+function addMonths(dateString, months) {
+    const original = parseDate(dateString);
+    const day = original.getDate();
 
-    if (!date) return "-";
+    const result = new Date(
+        original.getFullYear(),
+        original.getMonth() + months,
+        1
+    );
 
-    return date.toLocaleDateString("en-MY", {
-        day: "2-digit",
+    const lastDay = new Date(
+        result.getFullYear(),
+        result.getMonth() + 1,
+        0
+    ).getDate();
+
+    result.setDate(Math.min(day, lastDay));
+
+    return localDate(result);
+}
+
+function formatDate(dateString) {
+    return parseDate(dateString).toLocaleDateString("en-MY", {
+        day: "numeric",
         month: "short",
         year: "numeric"
     });
 }
 
-function formatLongDate(value) {
-    const date = parseDate(value);
-
-    if (!date) return "-";
-
-    return date.toLocaleDateString("en-MY", {
+function formatLongDate(dateString) {
+    return parseDate(dateString).toLocaleDateString("en-MY", {
         weekday: "long",
         day: "numeric",
         month: "long",
@@ -155,144 +109,69 @@ function formatLongDate(value) {
     });
 }
 
-function addDays(date, amount) {
-    const result = new Date(date);
-    result.setDate(result.getDate() + amount);
-    return result;
-}
+function sameMonth(dateString, date) {
+    const d = parseDate(dateString);
 
-function clampDate(year, monthIndex, day) {
-    const lastDay = new Date(year, monthIndex + 1, 0).getDate();
-
-    return new Date(
-        year,
-        monthIndex,
-        Math.min(day, lastDay)
+    return (
+        d.getMonth() === date.getMonth() &&
+        d.getFullYear() === date.getFullYear()
     );
 }
 
-function addMonthsClamped(date, months) {
-    const totalMonth = date.getMonth() + months;
-    const year = date.getFullYear() + Math.floor(totalMonth / 12);
-    const month = totalMonth % 12;
+function escapeHTML(value) {
+    return String(value ?? "").replace(/[&<>"']/g, char => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;"
+    })[char]);
+}
 
-    return clampDate(year, month, date.getDate());
+function personName(value) {
+    const names = {
+        "Baby": "Eisya",
+        "Sayang": "Capiq",
+        "Everyone": "Shared (Both)",
+        "Eisya": "Eisya",
+        "Capiq": "Capiq",
+        "Shared (Both)": "Shared (Both)"
+    };
+
+    return names[value] || value || "Unassigned";
 }
 
 function showToast(message) {
     const toast = $("toast");
 
-    if (!toast) return;
-
     toast.textContent = message;
     toast.classList.add("show");
 
-    clearTimeout(toastTimeout);
+    clearTimeout(toastTimer);
 
-    toastTimeout = setTimeout(() => {
+    toastTimer = setTimeout(() => {
         toast.classList.remove("show");
-    }, 2800);
+    }, 3000);
 }
 
-function setMessage(message, type = "") {
-    const element = $("formMessage");
+function setConnection(status, message) {
+    const dot = $("connectionDot");
 
-    if (!element) return;
-
-    element.textContent = message;
-    element.className = "form-message";
-
-    if (type) {
-        element.classList.add(type);
-    }
-}
-
-
-/* =========================================
-   DATABASE CONNECTION
-   ========================================= */
-
-function setConnectionStatus(status, message) {
-    const element = $("connectionStatus");
-
-    if (!element) return;
-
-    element.classList.remove("connected", "error");
+    dot.className = "status-dot";
 
     if (status === "connected") {
-        element.classList.add("connected");
+        dot.classList.add("connected");
+    } else if (status === "error") {
+        dot.classList.add("error");
     }
 
-    if (status === "error") {
-        element.classList.add("error");
-    }
-
-    element.innerHTML = `
-        <span class="status-dot"></span>
-        ${escapeHTML(message)}
-    `;
+    $("connectionText").textContent = message;
 }
 
-async function loadData() {
-    if (isLoading) return;
-
-    isLoading = true;
-
-    setConnectionStatus("loading", "Connecting...");
-
-    try {
-        const [debtResult, paymentResult] = await Promise.all([
-            db
-                .from("debts")
-                .select("*")
-                .order("created_at", {
-                    ascending: false
-                }),
-
-            db
-                .from("debt_payments")
-                .select("*")
-        ]);
-
-        if (debtResult.error) {
-            throw debtResult.error;
-        }
-
-        if (paymentResult.error) {
-            throw paymentResult.error;
-        }
-
-        debts = debtResult.data || [];
-        payments = paymentResult.data || [];
-
-        setConnectionStatus("connected", "Database connected");
-
-        renderEverything();
-
-    } catch (error) {
-        console.error("Database loading error:", error);
-
-        setConnectionStatus("error", "Connection error");
-
-        $("calendar").innerHTML = `
-            <div class="loading-message">
-                Unable to load calendar.<br>
-                ${escapeHTML(error.message || "Please check your database.")}
-            </div>
-        `;
-
-        $("debtList").innerHTML = `
-            <div class="empty-state">
-                Unable to load debts.<br>
-                <small>${escapeHTML(error.message || "Unknown error")}</small>
-            </div>
-        `;
-
-        showToast("Unable to load data from Supabase.");
-
-    } finally {
-        isLoading = false;
-    }
+function getDebtPayments(debtId) {
+    return payments
+        .filter(payment => String(payment.debt_id) === String(debtId))
+        .sort((a, b) => a.due_date.localeCompare(b.due_date));
 }
 
 
@@ -300,163 +179,177 @@ async function loadData() {
    PAYMENT SCHEDULE
    ========================================= */
 
-function getDebtPayments(debt) {
-    const firstDate = parseDate(debt.first_due_date);
+/*
+   Existing payment records are used as the
+   source of truth.
 
-    if (!firstDate) return [];
+   Missing schedule entries are represented
+   virtually so old debts can still display
+   their expected instalments without
+   automatically inserting duplicate records.
+*/
 
-    const numberOfMonths = Math.max(
-        0,
-        Number(debt.months) || 0
+function getSchedule(debt) {
+    const amount = Number(debt.amount) || 0;
+    const months = Number(debt.months) || 0;
+
+    const existing = getDebtPayments(debt.id);
+    const existingByDate = new Map(
+        existing.map(payment => [payment.due_date, payment])
     );
 
-    const monthlyAmount = Number(debt.amount) || 0;
+    const schedule = [];
 
-    const result = [];
+    for (let i = 0; i < months; i++) {
+        const dueDate = addMonths(debt.first_due_date, i);
+        const existingPayment = existingByDate.get(dueDate);
 
-    for (let index = 0; index < numberOfMonths; index++) {
-        const dueDate = addMonthsClamped(firstDate, index);
-        const dueDateKey = dateKey(dueDate);
-
-        const savedPayment = payments.find(payment =>
-            String(payment.debt_id) === String(debt.id) &&
-            String(payment.due_date).slice(0, 10) === dueDateKey
-        );
-
-        result.push({
-            debtId: debt.id,
-            debtName: debt.name,
-            person: debt.person,
-            amount: monthlyAmount,
-            dueDate: dueDateKey,
-            paid: savedPayment
-                ? Boolean(savedPayment.paid)
-                : false
+        schedule.push({
+            id: existingPayment?.id ?? null,
+            debt_id: debt.id,
+            due_date: dueDate,
+            paid: existingPayment?.paid === true,
+            amount,
+            virtual: !existingPayment
         });
     }
 
-    return result;
+    return schedule;
 }
 
-function getAllScheduledPayments() {
-    return debts.flatMap(debt => getDebtPayments(debt));
+function allSchedule() {
+    return debts.flatMap(debt =>
+        getSchedule(debt).map(payment => ({
+            ...payment,
+            debt
+        }))
+    );
 }
 
-function getUnpaidPayments(list) {
-    return list.filter(payment => !payment.paid);
+function paymentStatus(payment) {
+    if (payment.paid) return "paid";
+
+    const today = localDate(new Date());
+
+    if (payment.due_date < today) return "overdue";
+
+    return "upcoming";
 }
 
-function getPaidPayments(list) {
-    return list.filter(payment => payment.paid);
-}
-
-function sumPayments(list) {
-    return list.reduce(
-        (total, payment) => total + Number(payment.amount || 0),
+function sumPayments(items) {
+    return items.reduce(
+        (total, item) => total + Number(item.amount || 0),
         0
     );
 }
 
-function getDebtProgress(debt) {
-    const schedule = getDebtPayments(debt);
 
-    const paid = getPaidPayments(schedule);
-    const unpaid = getUnpaidPayments(schedule);
+/* =========================================
+   LOAD DATABASE
+   ========================================= */
 
-    const total = Number(debt.amount) * Number(debt.months);
-    const paidAmount = sumPayments(paid);
-    const remaining = sumPayments(unpaid);
+async function loadData() {
+    setConnection("loading", "Connecting...");
 
-    const percentage = total > 0
-        ? Math.min(100, (paidAmount / total) * 100)
-        : 0;
+    try {
+        const [debtResult, paymentResult] = await Promise.all([
+            db.from("debts")
+                .select("*")
+                .order("created_at", { ascending: false }),
 
-    return {
-        total,
-        paidAmount,
-        remaining,
-        paidCount: paid.length,
-        unpaidCount: unpaid.length,
-        totalCount: schedule.length,
-        percentage,
-        completed: unpaid.length === 0
-    };
+            db.from("debt_payments")
+                .select("*")
+                .order("due_date", { ascending: true })
+        ]);
+
+        if (debtResult.error) throw debtResult.error;
+        if (paymentResult.error) throw paymentResult.error;
+
+        debts = debtResult.data || [];
+        payments = paymentResult.data || [];
+
+        setConnection("connected", "Connected");
+
+        renderAll();
+
+    } catch (error) {
+        console.error("Database loading error:", error);
+
+        setConnection("error", "Connection failed");
+
+        showToast(
+            "Unable to load data. Check your Supabase settings and table permissions."
+        );
+
+        $("debtsContainer").innerHTML = `
+            <div class="empty-state">
+                <span>☁️</span>
+                <p>Unable to load your debts.</p>
+                <p>Please check your internet connection and Supabase settings.</p>
+            </div>
+        `;
+    }
 }
 
 
 /* =========================================
-   DASHBOARD SUMMARY
+   SUMMARY CALCULATIONS
    ========================================= */
 
-function renderDashboard() {
-    const allPayments = getAllScheduledPayments();
-    const unpaid = getUnpaidPayments(allPayments);
+function renderSummary() {
+    const schedule = allSchedule();
 
-    const today = new Date();
-    const todayKey = dateKey(today);
+    const unpaid = schedule.filter(item => !item.paid);
+    const paid = schedule.filter(item => item.paid);
 
-    const monthStart = dateKey(
-        new Date(today.getFullYear(), today.getMonth(), 1)
+    const today = localDate(new Date());
+
+    const overdue = unpaid.filter(
+        item => item.due_date < today
     );
 
-    const monthEnd = dateKey(
-        new Date(today.getFullYear(), today.getMonth() + 1, 0)
+    const thisMonth = schedule.filter(
+        item => sameMonth(item.due_date, currentMonth)
     );
 
-    const dueThisMonth = unpaid.filter(payment =>
-        payment.dueDate >= monthStart &&
-        payment.dueDate <= monthEnd
+    const todayItems = unpaid.filter(
+        item => item.due_date === today
     );
 
-    const overdue = unpaid.filter(payment =>
-        payment.dueDate < todayKey
-    );
+    const weekStart = new Date();
+    weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+    weekStart.setHours(0, 0, 0, 0);
+
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekEnd.getDate() + 6);
+
+    const weekItems = unpaid.filter(item => {
+        const date = parseDate(item.due_date);
+
+        return date >= weekStart && date <= weekEnd;
+    });
+
+    const upcomingEnd = new Date();
+    upcomingEnd.setDate(upcomingEnd.getDate() + 7);
+
+    const upcoming = unpaid.filter(item => {
+        const date = parseDate(item.due_date);
+
+        return date >= new Date(
+            new Date().getFullYear(),
+            new Date().getMonth(),
+            new Date().getDate()
+        ) && date <= upcomingEnd;
+    });
 
     $("totalOutstanding").textContent = money(sumPayments(unpaid));
+    $("totalPaid").textContent = money(sumPayments(paid));
+    $("totalThisMonth").textContent = money(sumPayments(thisMonth));
+    $("totalOverdue").textContent = money(sumPayments(overdue));
 
-    $("monthOutstanding").textContent = money(
-        sumPayments(dueThisMonth)
-    );
-
-    $("monthCount").textContent =
-        `${dueThisMonth.length} unpaid payment${dueThisMonth.length === 1 ? "" : "s"}`;
-
-    $("overdueOutstanding").textContent = money(
-        sumPayments(overdue)
-    );
-
-    $("overdueCount").textContent =
-        `${overdue.length} overdue payment${overdue.length === 1 ? "" : "s"}`;
-
-    const activeDebts = debts.filter(debt =>
-        !getDebtProgress(debt).completed
-    );
-
-    $("activeDebtCount").textContent = activeDebts.length;
-
-    const capiqPayments = unpaid.filter(payment =>
-        payment.person === "Sayang"
-    );
-
-    const eisyaPayments = unpaid.filter(payment =>
-        payment.person === "Baby"
-    );
-
-    const sharedPayments = unpaid.filter(payment =>
-        payment.person === "Everyone"
-    );
-
-    $("capiqOutstanding").textContent = money(
-        sumPayments(capiqPayments)
-    );
-
-    $("eisyaOutstanding").textContent = money(
-        sumPayments(eisyaPayments)
-    );
-
-    $("sharedOutstanding").textContent = money(
-        sumPayments(sharedPayments)
-    );
+    $("todayOutstanding").textContent = money(sumPayments(todayItems));
+    $("weekOutstanding").textContent = money(sumPayments(weekItems));
+    $("upcomingOutstanding").textContent = money(sumPayments(upcoming));
 }
 
 
@@ -465,237 +358,179 @@ function renderDashboard() {
    ========================================= */
 
 function renderCalendar() {
-    const calendar = $("calendar");
+    $("calendarMonth").textContent =
+        currentMonth.toLocaleDateString("en-MY", {
+            month: "long",
+            year: "numeric"
+        });
 
     const year = currentMonth.getFullYear();
     const month = currentMonth.getMonth();
 
-    $("monthLabel").textContent = currentMonth.toLocaleDateString(
-        "en-MY",
-        {
-            month: "long",
-            year: "numeric"
-        }
-    );
-
     const firstDay = new Date(year, month, 1);
-    const startDay = firstDay.getDay();
+    const startingDay = firstDay.getDay();
 
     const daysInMonth = new Date(year, month + 1, 0).getDate();
+
     const previousMonthDays = new Date(year, month, 0).getDate();
 
-    const allPayments = getAllScheduledPayments();
+    const schedule = allSchedule();
+
+    const paymentsByDate = new Map();
+
+    schedule.forEach(payment => {
+        if (!paymentsByDate.has(payment.due_date)) {
+            paymentsByDate.set(payment.due_date, []);
+        }
+
+        paymentsByDate.get(payment.due_date).push(payment);
+    });
+
+    const totalCells = Math.ceil(
+        (startingDay + daysInMonth) / 7
+    ) * 7;
 
     let html = "";
 
-    for (let index = 0; index < 42; index++) {
-        let dayNumber;
-        let date;
-        let isOtherMonth = false;
+    for (let i = 0; i < totalCells; i++) {
+        let day;
+        let dateString;
+        let outside = false;
 
-        if (index < startDay) {
-            dayNumber = previousMonthDays - startDay + index + 1;
+        if (i < startingDay) {
+            day = previousMonthDays - startingDay + i + 1;
 
-            date = new Date(year, month - 1, dayNumber);
-            isOtherMonth = true;
+            dateString = localDate(
+                new Date(year, month - 1, day)
+            );
 
-        } else if (index >= startDay + daysInMonth) {
-            dayNumber = index - startDay - daysInMonth + 1;
+            outside = true;
 
-            date = new Date(year, month + 1, dayNumber);
-            isOtherMonth = true;
+        } else if (i >= startingDay + daysInMonth) {
+            day = i - startingDay - daysInMonth + 1;
+
+            dateString = localDate(
+                new Date(year, month + 1, day)
+            );
+
+            outside = true;
 
         } else {
-            dayNumber = index - startDay + 1;
+            day = i - startingDay + 1;
 
-            date = new Date(year, month, dayNumber);
+            dateString = localDate(
+                new Date(year, month, day)
+            );
         }
 
-        const key = dateKey(date);
+        const dayPayments = paymentsByDate.get(dateString) || [];
 
-        const dayPayments = allPayments.filter(payment =>
-            payment.dueDate === key
-        );
+        const today = localDate(new Date());
 
-        const unpaid = getUnpaidPayments(dayPayments);
-        const unpaidTotal = sumPayments(unpaid);
+        const isSelected = dateString === selectedDate;
+        const isToday = dateString === today;
 
-        const todayClass = key === dateKey(new Date())
-            ? "today"
-            : "";
+        const classes = [
+            "calendar-day",
+            outside ? "outside" : "",
+            isSelected ? "selected" : "",
+            isToday ? "today" : "",
+            dayPayments.length ? "has-payment" : ""
+        ].filter(Boolean).join(" ");
 
-        const selectedClass = key === selectedDate
-            ? "selected"
-            : "";
+        let markers = "";
 
-        const otherClass = isOtherMonth
-            ? "other-month"
-            : "";
+        dayPayments.slice(0, 4).forEach(payment => {
+            const status = paymentStatus(payment);
 
-        let amountHTML = "";
-
-        if (dayPayments.length > 0) {
-            amountHTML = `
-                <span class="day-amount ${unpaid.length === 0 ? "day-paid" : ""}">
-                    ${unpaid.length > 0
-                        ? escapeHTML(money(unpaidTotal))
-                        : "Paid"}
-                </span>
-
-                <span class="day-indicator">
-                    ${dayPayments.map(payment =>
-                        `<i class="${payment.paid ? "paid" : ""}"></i>`
-                    ).join("")}
-                </span>
-            `;
-        }
+            markers += `<i class="${
+                status === "paid"
+                    ? "paid-marker"
+                    : status === "overdue"
+                        ? "overdue-marker"
+                        : ""
+            }"></i>`;
+        });
 
         html += `
             <button
+                class="${classes}"
+                data-date="${dateString}"
                 type="button"
-                class="calendar-day ${todayClass} ${selectedClass} ${otherClass}"
-                data-date="${key}"
-                aria-label="${escapeHTML(formatLongDate(key))}"
+                aria-label="${dateString}"
             >
-                <span class="day-number">${dayNumber}</span>
-                ${amountHTML}
+                <span class="calendar-day-number">${day}</span>
+                <span class="calendar-markers">${markers}</span>
             </button>
         `;
     }
 
-    calendar.innerHTML = html;
+    $("calendarDays").innerHTML = html;
 
-    calendar.querySelectorAll("[data-date]").forEach(button => {
+    document.querySelectorAll(".calendar-day").forEach(button => {
         button.addEventListener("click", () => {
             selectedDate = button.dataset.date;
 
             const clickedDate = parseDate(selectedDate);
 
-            if (
-                clickedDate.getMonth() !== currentMonth.getMonth() ||
-                clickedDate.getFullYear() !== currentMonth.getFullYear()
-            ) {
-                currentMonth = new Date(
-                    clickedDate.getFullYear(),
-                    clickedDate.getMonth(),
-                    1
-                );
-            }
+            currentMonth = new Date(
+                clickedDate.getFullYear(),
+                clickedDate.getMonth(),
+                1
+            );
 
-            renderCalendar();
-            renderSelectedDay();
+            renderAll();
         });
     });
 }
 
 
 /* =========================================
-   SELECTED DAY AND WEEKLY TOTALS
+   SELECTED DATE PAYMENTS
    ========================================= */
 
-function getPaymentsForDate(dateValue) {
-    return getAllScheduledPayments()
-        .filter(payment => payment.dueDate === dateValue)
-        .sort((a, b) => a.debtName.localeCompare(b.debtName));
-}
+function renderSelectedDate() {
+    $("selectedDateTitle").textContent =
+        formatLongDate(selectedDate);
 
-function renderSelectedDay() {
-    const selected = parseDate(selectedDate);
-
-    if (!selected) return;
-
-    $("selectedDateTitle").textContent = formatLongDate(selectedDate);
-    $("dailyTotalDate").textContent = formatDate(selectedDate);
-
-    const dayPayments = getPaymentsForDate(selectedDate);
-    const unpaid = getUnpaidPayments(dayPayments);
-
-    $("dailyOutstanding").textContent = money(
-        sumPayments(unpaid)
+    const items = allSchedule().filter(
+        item => item.due_date === selectedDate
     );
 
-    $("selectedPaymentCount").textContent =
-        `${dayPayments.length} payment${dayPayments.length === 1 ? "" : "s"}`;
+    const unpaid = items.filter(item => !item.paid);
 
-    const weekStart = new Date(selected);
-    weekStart.setDate(selected.getDate() - selected.getDay());
+    $("selectedDateTotal").textContent =
+        money(sumPayments(unpaid));
 
-    const weekEnd = addDays(weekStart, 6);
-
-    const weekStartKey = dateKey(weekStart);
-    const weekEndKey = dateKey(weekEnd);
-
-    const weeklyPayments = getAllScheduledPayments().filter(payment =>
-        !payment.paid &&
-        payment.dueDate >= weekStartKey &&
-        payment.dueDate <= weekEndKey
-    );
-
-    $("weeklyOutstanding").textContent = money(
-        sumPayments(weeklyPayments)
-    );
-
-    $("weeklyDateRange").textContent =
-        `${formatDate(weekStartKey)} – ${formatDate(weekEndKey)}`;
-
-    renderSelectedPayments(dayPayments);
-}
-
-function renderSelectedPayments(dayPayments) {
-    const container = $("selectedPayments");
-
-    if (dayPayments.length === 0) {
-        container.innerHTML = `
+    if (!items.length) {
+        $("selectedDatePayments").innerHTML = `
             <div class="empty-state">
-                No payments scheduled for this date.
+                <span>☁️</span>
+                <p>No payments scheduled for this date.</p>
             </div>
         `;
 
         return;
     }
 
-    container.innerHTML = dayPayments.map(payment => {
-        const isOverdue =
-            !payment.paid &&
-            payment.dueDate < dateKey(new Date());
-
-        let statusText = "Unpaid";
-        let statusClass = "status-unpaid";
-
-        if (payment.paid) {
-            statusText = "Paid";
-            statusClass = "status-paid";
-        } else if (isOverdue) {
-            statusText = "Overdue";
-            statusClass = "status-overdue";
-        }
+    $("selectedDatePayments").innerHTML = items.map(item => {
+        const status = paymentStatus(item);
 
         return `
             <div class="payment-item">
+
                 <div class="payment-info">
-                    <strong>${escapeHTML(payment.debtName)}</strong>
-
-                    <small>
-                        ${escapeHTML(displayPerson(payment.person))}
-                        · ${escapeHTML(statusText)}
-                    </small>
+                    <strong>${escapeHTML(item.debt.name)}</strong>
+                    <small>${escapeHTML(personName(item.debt.person))}</small>
                 </div>
 
-                <div class="payment-actions">
-                    <span class="payment-amount ${statusClass}">
-                        ${money(payment.amount)}
+                <div class="payment-right">
+                    <strong>${money(item.amount)}</strong>
+                    <span class="status-pill status-${status}">
+                        ${status.toUpperCase()}
                     </span>
-
-                    <button
-                        type="button"
-                        class="small-button ${payment.paid ? "undo" : ""}"
-                        data-payment-debt="${escapeHTML(payment.debtId)}"
-                        data-payment-date="${escapeHTML(payment.dueDate)}"
-                        data-payment-paid="${payment.paid}"
-                    >
-                        ${payment.paid ? "Undo Paid" : "Mark Paid"}
-                    </button>
                 </div>
+
             </div>
         `;
     }).join("");
@@ -703,126 +538,433 @@ function renderSelectedPayments(dayPayments) {
 
 
 /* =========================================
-   MARK PAID / UNDO PAID
+   MONTHLY BREAKDOWN
    ========================================= */
 
-async function updatePayment(debtId, dueDate, paid) {
-    try {
-        const { error } = await db
-            .from("debt_payments")
-            .upsert(
-                {
-                    debt_id: debtId,
-                    due_date: dueDate,
-                    paid: paid
-                },
-                {
-                    onConflict: "debt_id,due_date"
-                }
-            );
+function renderMonthlyTotals() {
+    const schedule = allSchedule().filter(
+        item => sameMonth(item.due_date, currentMonth)
+    );
 
-        if (error) {
-            throw error;
+    $("monthlyBreakdownTitle").textContent =
+        currentMonth.toLocaleDateString("en-MY", {
+            month: "long",
+            year: "numeric"
+        }) + " breakdown";
+
+    const paid = schedule.filter(item => item.paid);
+    const unpaid = schedule.filter(item => !item.paid);
+
+    $("monthlyScheduled").textContent =
+        money(sumPayments(schedule));
+
+    $("monthlyPaid").textContent =
+        money(sumPayments(paid));
+
+    $("monthlyRemaining").textContent =
+        money(sumPayments(unpaid));
+
+    const groups = {
+        Capiq: {
+            scheduled: 0,
+            paid: 0,
+            remaining: 0
+        },
+        Eisya: {
+            scheduled: 0,
+            paid: 0,
+            remaining: 0
+        },
+        "Shared (Both)": {
+            scheduled: 0,
+            paid: 0,
+            remaining: 0
+        }
+    };
+
+    schedule.forEach(item => {
+        const person = personName(item.debt.person);
+
+        if (!groups[person]) return;
+
+        groups[person].scheduled += Number(item.amount);
+
+        if (item.paid) {
+            groups[person].paid += Number(item.amount);
+        } else {
+            groups[person].remaining += Number(item.amount);
+        }
+    });
+
+    const ids = {
+        Capiq: "capiq",
+        Eisya: "eisya",
+        "Shared (Both)": "shared"
+    };
+
+    Object.entries(groups).forEach(([person, data]) => {
+        const prefix = ids[person];
+
+        $(`${prefix}Scheduled`).textContent =
+            money(data.scheduled);
+
+        $(`${prefix}Paid`).textContent =
+            money(data.paid);
+
+        $(`${prefix}Remaining`).textContent =
+            money(data.remaining);
+    });
+}
+
+
+/* =========================================
+   DEBT STATUS
+   ========================================= */
+
+function debtProgress(debt) {
+    const schedule = getSchedule(debt);
+
+    const completed = schedule.filter(
+        item => item.paid
+    ).length;
+
+    const total = schedule.length;
+
+    return {
+        completed,
+        total,
+        percentage: total
+            ? Math.round(completed / total * 100)
+            : 0
+    };
+}
+
+function getDebtStatus(debt) {
+    const schedule = getSchedule(debt);
+
+    if (schedule.every(item => item.paid)) {
+        return "completed";
+    }
+
+    if (schedule.some(
+        item => !item.paid && item.due_date < localDate(new Date())
+    )) {
+        return "overdue";
+    }
+
+    return "active";
+}
+
+
+/* =========================================
+   DEBT CARDS
+   ========================================= */
+
+function renderDebts() {
+    const search = $("searchDebt").value
+        .trim()
+        .toLowerCase();
+
+    const personFilter = $("personFilter").value;
+    const statusFilter = $("statusFilter").value;
+
+    const filtered = debts.filter(debt => {
+        const name = String(debt.name || "").toLowerCase();
+        const note = String(debt.note || "").toLowerCase();
+
+        const matchesSearch =
+            name.includes(search) || note.includes(search);
+
+        const matchesPerson =
+            personFilter === "all" ||
+            personName(debt.person) === personFilter;
+
+        const matchesStatus =
+            statusFilter === "all" ||
+            getDebtStatus(debt) === statusFilter;
+
+        return matchesSearch && matchesPerson && matchesStatus;
+    });
+
+    $("debtCount").textContent =
+        `${filtered.length} ${filtered.length === 1 ? "debt" : "debts"}`;
+
+    if (!filtered.length) {
+        $("debtsContainer").innerHTML = `
+            <div class="empty-state" style="grid-column:1/-1">
+                <span>♡</span>
+                <p>No debts found.</p>
+            </div>
+        `;
+
+        return;
+    }
+
+    $("debtsContainer").innerHTML = filtered.map(debt => {
+        const schedule = getSchedule(debt);
+
+        const progress = debtProgress(debt);
+        const status = getDebtStatus(debt);
+
+        const nextPayment = schedule.find(
+            item => !item.paid
+        );
+
+        const outstanding = sumPayments(
+            schedule.filter(item => !item.paid)
+        );
+
+        const totalPaid = sumPayments(
+            schedule.filter(item => item.paid)
+        );
+
+        const statusLabel = {
+            active: "ACTIVE",
+            overdue: "OVERDUE",
+            completed: "COMPLETED"
+        }[status];
+
+        const actionButton = nextPayment
+            ? `
+                <button
+                    class="small-button pay-button"
+                    data-action="pay"
+                    data-debt="${escapeHTML(debt.id)}"
+                    data-date="${nextPayment.due_date}"
+                >
+                    ✓ Mark Next Paid
+                </button>
+            `
+            : `
+                <span class="status-pill status-paid">ALL PAID</span>
+            `;
+
+        const undoButton = schedule.some(item => item.paid)
+            ? `
+                <button
+                    class="small-button undo-button"
+                    data-action="undo"
+                    data-debt="${escapeHTML(debt.id)}"
+                >
+                    ↶ Undo Last Paid
+                </button>
+            `
+            : "";
+
+        return `
+            <article class="debt-card">
+
+                <div class="debt-card-top">
+                    <div>
+                        <h3>${escapeHTML(debt.name)}</h3>
+                        <span class="debt-person">
+                            ${escapeHTML(personName(debt.person))}
+                            · ${schedule.length} months
+                        </span>
+                    </div>
+
+                    <span class="status-pill status-${
+                        status === "completed"
+                            ? "paid"
+                            : status === "overdue"
+                                ? "overdue"
+                                : "upcoming"
+                    }">
+                        ${statusLabel}
+                    </span>
+                </div>
+
+                <div class="debt-amount">
+                    ${money(outstanding)}
+                </div>
+
+                <div class="debt-amount-label">
+                    Remaining outstanding
+                </div>
+
+                <div class="debt-details">
+                    <div>
+                        <span>Monthly payment</span>
+                        <strong>${money(debt.amount)}</strong>
+                    </div>
+
+                    <div>
+                        <span>Total paid</span>
+                        <strong>${money(totalPaid)}</strong>
+                    </div>
+
+                    <div>
+                        <span>First due date</span>
+                        <strong>${formatDate(debt.first_due_date)}</strong>
+                    </div>
+
+                    <div>
+                        <span>Next payment</span>
+                        <strong>
+                            ${nextPayment
+                                ? formatDate(nextPayment.due_date)
+                                : "Completed"}
+                        </strong>
+                    </div>
+                </div>
+
+                <div class="debt-progress">
+                    <div
+                        class="debt-progress-fill"
+                        style="width:${progress.percentage}%"
+                    ></div>
+                </div>
+
+                <div class="debt-progress-label">
+                    <span>${progress.completed} / ${progress.total} payments completed</span>
+                    <strong>${progress.percentage}%</strong>
+                </div>
+
+                ${debt.note ? `
+                    <div class="debt-note">
+                        ♡ ${escapeHTML(debt.note)}
+                    </div>
+                ` : ""}
+
+                <div class="debt-actions">
+                    ${actionButton}
+                    ${undoButton}
+
+                    <button
+                        class="small-button delete-button"
+                        data-action="delete"
+                        data-debt="${escapeHTML(debt.id)}"
+                    >
+                        Delete
+                    </button>
+                </div>
+
+            </article>
+        `;
+    }).join("");
+
+    document.querySelectorAll("[data-action]").forEach(button => {
+        button.addEventListener("click", async () => {
+            const action = button.dataset.action;
+            const debtId = button.dataset.debt;
+
+            if (action === "pay") {
+                await markPaymentPaid(
+                    debtId,
+                    button.dataset.date
+                );
+            }
+
+            if (action === "undo") {
+                await undoLastPayment(debtId);
+            }
+
+            if (action === "delete") {
+                await deleteDebt(debtId);
+            }
+        });
+    });
+}
+
+
+/* =========================================
+   MARK PAYMENT PAID
+   ========================================= */
+
+async function markPaymentPaid(debtId, dueDate) {
+    const debt = debts.find(
+        item => String(item.id) === String(debtId)
+    );
+
+    if (!debt) return;
+
+    const existing = payments.find(payment =>
+        String(payment.debt_id) === String(debtId) &&
+        payment.due_date === dueDate
+    );
+
+    if (existing?.paid) {
+        showToast("This payment is already paid.");
+        return;
+    }
+
+    try {
+        let result;
+
+        if (existing) {
+            result = await db
+                .from("debt_payments")
+                .update({ paid: true })
+                .eq("id", existing.id)
+                .select()
+                .single();
+
+        } else {
+            result = await db
+                .from("debt_payments")
+                .insert({
+                    debt_id: debt.id,
+                    due_date: dueDate,
+                    paid: true
+                })
+                .select()
+                .single();
         }
 
-        showToast(
-            paid
-                ? "Payment marked as paid."
-                : "Payment changed back to unpaid."
-        );
+        if (result.error) throw result.error;
+
+        showToast("Payment successfully marked as paid! ♡");
 
         await loadData();
 
     } catch (error) {
         console.error("Payment update error:", error);
 
-        showToast(
-            `Unable to update payment: ${error.message || "Unknown error"}`
-        );
+        showToast("Unable to update payment. Please try again.");
     }
 }
 
 
 /* =========================================
-   ADD DEBT
+   UNDO PAYMENT
    ========================================= */
 
-async function addDebt(event) {
-    event.preventDefault();
+async function undoLastPayment(debtId) {
+    const schedule = getSchedule(
+        debts.find(item => String(item.id) === String(debtId))
+    );
 
-    const form = $("debtForm");
-    const button = $("submitBtn");
+    const lastPaid = schedule
+        .filter(item => item.paid)
+        .sort((a, b) => b.due_date.localeCompare(a.due_date))[0];
 
-    const formData = new FormData(form);
-
-    const person = String(formData.get("person") || "");
-    const name = String(formData.get("name") || "").trim();
-    const amount = Number(formData.get("amount"));
-    const months = Number(formData.get("months"));
-    const firstDueDate = String(formData.get("first_due_date") || "");
-    const note = String(formData.get("note") || "").trim();
-
-    setMessage("");
-
-    if (!PEOPLE.includes(person)) {
-        setMessage("Please select Capiq, Eisya or Shared (Both).", "error");
+    if (!lastPaid || !lastPaid.id) {
+        showToast("Unable to find the saved payment record.");
         return;
     }
 
-    if (!name || !parseDate(firstDueDate)) {
-        setMessage("Please enter a debt name and valid payment date.", "error");
-        return;
-    }
+    const confirmed = confirm(
+        "Are you sure you want to undo this payment?"
+    );
 
-    if (!Number.isFinite(amount) || amount <= 0) {
-        setMessage("Enter a valid monthly payment amount.", "error");
-        return;
-    }
-
-    if (!Number.isInteger(months) || months < 1 || months > 600) {
-        setMessage("Enter a valid number of months.", "error");
-        return;
-    }
-
-    button.disabled = true;
-    button.textContent = "Saving...";
+    if (!confirmed) return;
 
     try {
         const { error } = await db
-            .from("debts")
-            .insert({
-                person,
-                name,
-                amount,
-                months,
-                first_due_date: firstDueDate,
-                note
-            });
+            .from("debt_payments")
+            .update({ paid: false })
+            .eq("id", lastPaid.id);
 
-        if (error) {
-            throw error;
-        }
+        if (error) throw error;
 
-        form.reset();
-
-        $("person").value = "Sayang";
-
-        setMessage("Debt added successfully.", "success");
-        showToast("New debt added successfully.");
+        showToast("Payment status has been undone.");
 
         await loadData();
 
     } catch (error) {
-        console.error("Add debt error:", error);
+        console.error("Undo error:", error);
 
-        setMessage(
-            `Unable to save: ${error.message || "Unknown error"}`,
-            "error"
-        );
-
-    } finally {
-        button.disabled = false;
-        button.textContent = "+ Add Debt";
+        showToast("Unable to undo payment.");
     }
 }
 
@@ -832,205 +974,174 @@ async function addDebt(event) {
    ========================================= */
 
 async function deleteDebt(debtId) {
-    const debt = debts.find(item =>
-        String(item.id) === String(debtId)
+    const debt = debts.find(
+        item => String(item.id) === String(debtId)
     );
 
     if (!debt) return;
 
-    const confirmed = window.confirm(
-        `Delete "${debt.name}"?\n\nThis action removes the debt record. If your database has a cascading relationship, its payment history will also be deleted. This cannot be undone.`
+    const confirmed = confirm(
+        `Delete "${debt.name}" and its payment history? This cannot be undone.`
     );
 
     if (!confirmed) return;
 
     try {
-        const { error } = await db
+        const { error: paymentError } = await db
+            .from("debt_payments")
+            .delete()
+            .eq("debt_id", debtId);
+
+        if (paymentError) throw paymentError;
+
+        const { error: debtError } = await db
             .from("debts")
             .delete()
             .eq("id", debtId);
 
-        if (error) {
-            throw error;
-        }
+        if (debtError) throw debtError;
 
-        showToast("Debt deleted.");
+        showToast("Debt deleted successfully.");
 
         await loadData();
 
     } catch (error) {
-        console.error("Delete debt error:", error);
+        console.error("Delete error:", error);
 
         showToast(
-            `Unable to delete debt: ${error.message || "Unknown error"}`
+            "Unable to delete debt. Please check database permissions."
         );
     }
 }
 
 
 /* =========================================
-   ALL DEBTS
+   ADD DEBT MODAL
    ========================================= */
 
-function renderDebtList() {
-    const container = $("debtList");
+function openModal() {
+    $("debtModal").classList.add("active");
+    document.body.style.overflow = "hidden";
+}
 
-    const search = $("debtSearch").value
-        .trim()
-        .toLowerCase();
+function closeModal() {
+    $("debtModal").classList.remove("active");
+    document.body.style.overflow = "";
 
-    const personFilter = $("personFilter").value;
-    const statusFilter = $("statusFilter").value;
+    $("debtForm").reset();
 
-    const filtered = debts.filter(debt => {
-        const progress = getDebtProgress(debt);
+    updateEstimatedTotal();
+}
 
-        const matchesSearch =
-            String(debt.name || "").toLowerCase().includes(search) ||
-            String(debt.note || "").toLowerCase().includes(search);
+function updateEstimatedTotal() {
+    const amount = Number($("debtAmount").value) || 0;
+    const months = Number($("debtMonths").value) || 0;
 
-        const matchesPerson =
-            personFilter === "All" ||
-            debt.person === personFilter;
-
-        const matchesStatus =
-            statusFilter === "All" ||
-            (statusFilter === "Active" && !progress.completed) ||
-            (statusFilter === "Completed" && progress.completed);
-
-        return matchesSearch && matchesPerson && matchesStatus;
-    });
-
-    if (filtered.length === 0) {
-        container.innerHTML = `
-            <div class="empty-state">
-                No debts found.
-            </div>
-        `;
-
-        return;
-    }
-
-    container.innerHTML = filtered.map(debt => {
-        const progress = getDebtProgress(debt);
-        const percentage = Math.round(progress.percentage);
-
-        let personClass = "";
-
-        if (debt.person === "Sayang") {
-            personClass = "capiq";
-        } else if (debt.person === "Everyone") {
-            personClass = "shared";
-        }
-
-        const personName = displayPerson(debt.person);
-
-        return `
-            <article class="debt-card">
-
-                <div class="debt-card-top">
-                    <div class="debt-title-wrap">
-                        <h3>${escapeHTML(debt.name)}</h3>
-
-                        <small>
-                            First payment: ${formatDate(debt.first_due_date)}
-                        </small>
-                    </div>
-
-                    <span class="person-tag ${personClass}">
-                        ${escapeHTML(personName)}
-                    </span>
-                </div>
-
-                <div class="debt-total">
-                    <span>Remaining balance</span>
-                    <strong>${money(progress.remaining)}</strong>
-                </div>
-
-                <div class="progress-track">
-                    <div
-                        class="progress-fill"
-                        style="width: ${percentage}%"
-                    ></div>
-                </div>
-
-                <div class="progress-labels">
-                    <span>${percentage}% paid</span>
-                    <span>
-                        ${progress.paidCount}/${progress.totalCount} payments
-                    </span>
-                </div>
-
-                <div class="debt-meta">
-                    <div>
-                        <span>Monthly payment</span>
-                        <strong>${money(debt.amount)}</strong>
-                    </div>
-
-                    <div>
-                        <span>Total original amount</span>
-                        <strong>${money(progress.total)}</strong>
-                    </div>
-
-                    <div>
-                        <span>Paid so far</span>
-                        <strong>${money(progress.paidAmount)}</strong>
-                    </div>
-
-                    <div>
-                        <span>Remaining months</span>
-                        <strong>${progress.unpaidCount}</strong>
-                    </div>
-                </div>
-
-                ${debt.note ? `
-                    <p class="debt-note">
-                        Note: ${escapeHTML(debt.note)}
-                    </p>
-                ` : ""}
-
-                <div class="debt-actions">
-                    <span class="${progress.completed ? "status-paid" : "status-unpaid"}">
-                        ${progress.completed ? "✓ Completed" : "● Active"}
-                    </span>
-
-                    <button
-                        type="button"
-                        class="text-button delete"
-                        data-delete-debt="${escapeHTML(debt.id)}"
-                    >
-                        Delete debt
-                    </button>
-                </div>
-
-            </article>
-        `;
-    }).join("");
+    $("estimatedTotal").textContent =
+        money(amount * months);
 }
 
 
 /* =========================================
-   DATE AND HEADER
+   SAVE NEW DEBT
    ========================================= */
 
-function renderToday() {
-    const today = new Date();
+async function saveDebt(event) {
+    event.preventDefault();
 
-    $("todayDate").textContent = today.toLocaleDateString(
-        "en-MY",
-        {
-            day: "numeric",
-            month: "short"
+    const person = $("debtPerson").value;
+    const name = $("debtName").value.trim();
+    const amount = Number($("debtAmount").value);
+    const months = Number($("debtMonths").value);
+    const firstDate = $("debtFirstDate").value;
+    const note = $("debtNote").value.trim();
+
+    if (!name || !firstDate || amount <= 0 || months < 1) {
+        showToast("Please fill in all required fields correctly.");
+        return;
+    }
+
+    const button = $("saveDebtButton");
+
+    button.disabled = true;
+    button.textContent = "Saving...";
+
+    try {
+        const { data: debt, error } = await db
+            .from("debts")
+            .insert({
+                person,
+                name,
+                amount,
+                months,
+                first_due_date: firstDate,
+                note
+            })
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        const paymentRows = [];
+
+        for (let i = 0; i < months; i++) {
+            paymentRows.push({
+                debt_id: debt.id,
+                due_date: addMonths(firstDate, i),
+                paid: false
+            });
         }
+
+        const { error: paymentError } = await db
+            .from("debt_payments")
+            .insert(paymentRows);
+
+        if (paymentError) {
+            console.error(
+                "Payment schedule creation error:",
+                paymentError
+            );
+
+            showToast(
+                "Debt saved, but its payment schedule could not be created. Check your Supabase permissions."
+            );
+
+        } else {
+            showToast("New debt and payment schedule saved! ♡");
+        }
+
+        closeModal();
+
+        await loadData();
+
+    } catch (error) {
+        console.error("Save debt error:", error);
+
+        showToast(
+            error.message || "Unable to save debt."
+        );
+
+    } finally {
+        button.disabled = false;
+        button.textContent = "Save Debt";
+    }
+}
+
+
+/* =========================================
+   NAVIGATION
+   ========================================= */
+
+function changeMonth(direction) {
+    currentMonth = new Date(
+        currentMonth.getFullYear(),
+        currentMonth.getMonth() + direction,
+        1
     );
 
-    $("todayDay").textContent = today.toLocaleDateString(
-        "en-MY",
-        {
-            weekday: "long",
-            year: "numeric"
-        }
-    );
+    selectedDate = localDate(currentMonth);
+
+    renderAll();
 }
 
 
@@ -1038,12 +1149,12 @@ function renderToday() {
    RENDER EVERYTHING
    ========================================= */
 
-function renderEverything() {
-    renderToday();
-    renderDashboard();
+function renderAll() {
+    renderSummary();
     renderCalendar();
-    renderSelectedDay();
-    renderDebtList();
+    renderSelectedDate();
+    renderMonthlyTotals();
+    renderDebts();
 }
 
 
@@ -1051,62 +1162,68 @@ function renderEverything() {
    EVENT LISTENERS
    ========================================= */
 
-function setupEventListeners() {
-    $("debtForm").addEventListener("submit", addDebt);
+function initializeEvents() {
 
-    $("prevMonth").addEventListener("click", () => {
-        currentMonth = new Date(
-            currentMonth.getFullYear(),
-            currentMonth.getMonth() - 1,
-            1
-        );
+    $("openAddDebt").addEventListener(
+        "click",
+        openModal
+    );
 
-        renderCalendar();
+    $("closeDebtModal").addEventListener(
+        "click",
+        closeModal
+    );
+
+    $("debtModal").addEventListener("click", event => {
+        if (event.target === $("debtModal")) {
+            closeModal();
+        }
     });
 
-    $("nextMonth").addEventListener("click", () => {
-        currentMonth = new Date(
-            currentMonth.getFullYear(),
-            currentMonth.getMonth() + 1,
-            1
-        );
+    $("debtForm").addEventListener(
+        "submit",
+        saveDebt
+    );
 
-        renderCalendar();
-    });
+    $("previousMonth").addEventListener(
+        "click",
+        () => changeMonth(-1)
+    );
 
-    $("refreshBtn").addEventListener("click", async () => {
-        await loadData();
-        showToast("Data refreshed.");
-    });
+    $("nextMonth").addEventListener(
+        "click",
+        () => changeMonth(1)
+    );
 
-    $("debtSearch").addEventListener("input", renderDebtList);
+    $("searchDebt").addEventListener(
+        "input",
+        renderDebts
+    );
 
-    $("personFilter").addEventListener("change", renderDebtList);
+    $("personFilter").addEventListener(
+        "change",
+        renderDebts
+    );
 
-    $("statusFilter").addEventListener("change", renderDebtList);
+    $("statusFilter").addEventListener(
+        "change",
+        renderDebts
+    );
 
-    $("selectedPayments").addEventListener("click", event => {
-        const button = event.target.closest("[data-payment-debt]");
+    $("debtAmount").addEventListener(
+        "input",
+        updateEstimatedTotal
+    );
 
-        if (!button) return;
+    $("debtMonths").addEventListener(
+        "input",
+        updateEstimatedTotal
+    );
 
-        const debtId = button.dataset.paymentDebt;
-        const dueDate = button.dataset.paymentDate;
-        const currentlyPaid = button.dataset.paymentPaid === "true";
-
-        updatePayment(
-            debtId,
-            dueDate,
-            !currentlyPaid
-        );
-    });
-
-    $("debtList").addEventListener("click", event => {
-        const button = event.target.closest("[data-delete-debt]");
-
-        if (!button) return;
-
-        deleteDebt(button.dataset.deleteDebt);
+    document.addEventListener("keydown", event => {
+        if (event.key === "Escape") {
+            closeModal();
+        }
     });
 }
 
@@ -1116,11 +1233,13 @@ function setupEventListeners() {
    ========================================= */
 
 document.addEventListener("DOMContentLoaded", async () => {
-    setupEventListeners();
 
-    renderToday();
+    initializeEvents();
 
-    $("person").value = "Sayang";
+    $("debtFirstDate").value = localDate(new Date());
+
+    updateEstimatedTotal();
 
     await loadData();
+
 });

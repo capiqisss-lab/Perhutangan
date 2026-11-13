@@ -1,0 +1,21 @@
+
+{
+  "id": "./",
+  "name": "Perhutangan ♡",
+  "short_name": "Perhutangan",
+  "description": "Our little shared debt tracker.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f5faff",
+  "theme_color": "#eaf5ff",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

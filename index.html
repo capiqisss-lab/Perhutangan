@@ -2,9 +2,13 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <meta name="theme-color" content="#f5f7ff">
-    <title>Perhutangan ♡</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#08120d">
+    <title>Perhutangan ♡ | Debt Tracker</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
     <link rel="stylesheet" href="styles.css">
 
@@ -13,457 +17,344 @@
 </head>
 
 <body>
-<div class="app-shell">
+    <div class="ambient ambient-one"></div>
+    <div class="ambient ambient-two"></div>
 
     <header class="topbar">
-        <div>
-            <div class="eyebrow">SHARED FAMILY FINANCE</div>
-            <h1>Perhutangan <span>♡</span></h1>
-            <p class="muted">Your money, goals and little dreams.</p>
-        </div>
+        <a href="#" class="brand">
+            <span class="brand-icon">♡</span>
+            <span>
+                <strong>PERHUTANGAN</strong>
+                <small>OUR DEBT TRACKER</small>
+            </span>
+        </a>
 
-        <div class="connection">
-            <span id="connectionDot" class="status-dot"></span>
-            <span id="connectionStatus">Connecting...</span>
+        <div class="header-right">
+            <span id="connectionStatus" class="connection-status">
+                <span class="status-dot"></span>
+                Connecting...
+            </span>
+
+            <button id="refreshBtn" class="icon-button" type="button" title="Refresh">
+                ↻
+            </button>
         </div>
     </header>
 
-    <nav class="navigation">
-        <button class="nav-btn active" data-page="dashboard">Overview</button>
-        <button class="nav-btn" data-page="debts">Debts</button>
-        <button class="nav-btn" data-page="wishlist">Wishlist</button>
-        <button class="nav-btn" data-page="money">Income & Expenses</button>
-        <button class="nav-btn" data-page="savings">Savings</button>
-    </nav>
+    <main class="container">
 
-    <main>
-
-        <!-- DASHBOARD -->
-        <section class="page active" id="dashboard">
-            <div class="section-heading">
-                <div>
-                    <div class="eyebrow">YOUR FINANCIAL SPACE</div>
-                    <h2>Money Overview</h2>
-                </div>
-                <button class="small-btn" id="refreshBtn">↻ Refresh</button>
+        <section class="welcome-section">
+            <div>
+                <p class="eyebrow">OUR SHARED COMMITMENTS</p>
+                <h1>Manage your debts<span class="heart"> ♡</span></h1>
+                <p class="subtitle">A simple place to keep track of what we owe and what we have paid.</p>
             </div>
 
-            <div class="summary-grid">
-                <article class="summary-card">
-                    <span>Total Outstanding Debt</span>
-                    <strong id="dashDebt">RM 0.00</strong>
-                    <small id="dashDebtCount">0 active debts</small>
-                </article>
-
-                <article class="summary-card">
-                    <span>Total Income</span>
-                    <strong id="dashIncome">RM 0.00</strong>
-                    <small>This month</small>
-                </article>
-
-                <article class="summary-card">
-                    <span>Total Expenses</span>
-                    <strong id="dashExpenses">RM 0.00</strong>
-                    <small>This month</small>
-                </article>
-
-                <article class="summary-card">
-                    <span>Available Balance</span>
-                    <strong id="dashBalance">RM 0.00</strong>
-                    <small>Income minus expenses</small>
-                </article>
-            </div>
-
-            <div class="content-grid">
-                <article class="panel">
-                    <div class="panel-heading">
-                        <div>
-                            <h3>Financial Insights</h3>
-                            <p class="muted">Your monthly money activity</p>
-                        </div>
-                    </div>
-                    <canvas id="financeChart" height="230"></canvas>
-                </article>
-
-                <article class="panel">
-                    <div class="panel-heading">
-                        <div>
-                            <h3>Expense Breakdown</h3>
-                            <p class="muted">Where your money goes</p>
-                        </div>
-                    </div>
-                    <canvas id="expenseChart" height="230"></canvas>
-                    <div id="expenseLegend" class="legend"></div>
-                </article>
-            </div>
-
-            <div class="content-grid">
-                <article class="panel">
-                    <h3>Family Debt Summary</h3>
-                    <div class="person-summary">
-                        <div><span>Eisya</span><strong id="dashEisya">RM 0.00</strong></div>
-                        <div><span>Capiq</span><strong id="dashCapiq">RM 0.00</strong></div>
-                        <div><span>Everyone</span><strong id="dashEveryone">RM 0.00</strong></div>
-                    </div>
-                </article>
-
-                <article class="panel">
-                    <h3>Wishlist Progress</h3>
-                    <div class="person-summary">
-                        <div><span>Wishlist items</span><strong id="dashWishCount">0</strong></div>
-                        <div><span>Total wishlist value</span><strong id="dashWishTotal">RM 0.00</strong></div>
-                        <div><span>Total saved</span><strong id="dashWishSaved">RM 0.00</strong></div>
-                    </div>
-                </article>
-            </div>
-
-            <div class="panel">
-                <h3>Upcoming Payments</h3>
-                <div id="dashboardUpcoming" class="item-list">
-                    <p class="empty">No upcoming payments.</p>
-                </div>
+            <div class="today-card">
+                <span class="today-label">TODAY</span>
+                <strong id="todayDate">--</strong>
+                <small id="todayDay">--</small>
             </div>
         </section>
 
-        <!-- DEBTS -->
-        <section class="page" id="debts">
-            <div class="section-heading">
-                <div>
-                    <div class="eyebrow">FAMILY COMMITMENTS</div>
-                    <h2>Debt Tracker</h2>
-                </div>
-            </div>
+        <!-- SUMMARY -->
+        <section class="summary-grid">
 
-            <div class="summary-grid compact-grid">
-                <article class="summary-card">
-                    <span>Outstanding</span>
-                    <strong id="debtOutstanding">RM 0.00</strong>
-                </article>
-                <article class="summary-card">
+            <article class="summary-card summary-main">
+                <div class="summary-top">
+                    <span>Total Outstanding</span>
+                    <span class="summary-icon">◈</span>
+                </div>
+                <strong id="totalOutstanding">RM 0.00</strong>
+                <small>All remaining unpaid instalments</small>
+            </article>
+
+            <article class="summary-card">
+                <div class="summary-top">
+                    <span>Due This Month</span>
+                    <span class="summary-icon">▦</span>
+                </div>
+                <strong id="monthOutstanding">RM 0.00</strong>
+                <small id="monthCount">0 unpaid payments</small>
+            </article>
+
+            <article class="summary-card">
+                <div class="summary-top">
+                    <span>Overdue</span>
+                    <span class="summary-icon">!</span>
+                </div>
+                <strong id="overdueOutstanding">RM 0.00</strong>
+                <small id="overdueCount">0 overdue payments</small>
+            </article>
+
+            <article class="summary-card">
+                <div class="summary-top">
                     <span>Active Debts</span>
-                    <strong id="debtActiveCount">0</strong>
-                </article>
-                <article class="summary-card">
-                    <span>Remaining Instalments</span>
-                    <strong id="debtRemainingCount">0</strong>
-                </article>
-            </div>
-
-            <div class="content-grid">
-                <article class="panel">
-                    <h3>Add New Debt</h3>
-
-                    <form id="debtForm">
-                        <label>Person</label>
-                        <select id="debtPerson" required>
-                            <option value="Eisya">Eisya</option>
-                            <option value="Capiq">Capiq</option>
-                            <option value="Everyone">Everyone</option>
-                        </select>
-
-                        <label>Debt Category</label>
-                        <select id="debtName" required>
-                            <option>Atome PayLater</option>
-                            <option>Atome Card</option>
-                            <option>Atome Loan</option>
-                            <option>SPayLater</option>
-                            <option>SLoan</option>
-                            <option>TikTok PayLater</option>
-                            <option>TikTok Loan</option>
-                        </select>
-
-                        <label>Monthly Amount (RM)</label>
-                        <input id="debtAmount" type="number" min="0.01" step="0.01" required>
-
-                        <label>Number of Months</label>
-                        <input id="debtMonths" type="number" min="1" max="120" required>
-
-                        <label>First Payment Date</label>
-                        <input id="debtDate" type="date" required>
-
-                        <label>Note (optional)</label>
-                        <textarea id="debtNote" rows="2"></textarea>
-
-                        <button class="primary-btn" type="submit">Add Debt</button>
-                        <p class="form-message" id="debtMessage"></p>
-                    </form>
-                </article>
-
-                <article class="panel">
-                    <h3>Debt Calendar</h3>
-                    <div class="calendar-controls">
-                        <button class="small-btn" id="calendarPrev">←</button>
-                        <strong id="calendarMonth"></strong>
-                        <button class="small-btn" id="calendarNext">→</button>
-                    </div>
-                    <div class="calendar-grid" id="calendar"></div>
-                    <div class="calendar-legend">
-                        <span><i class="dot paid"></i> Paid</span>
-                        <span><i class="dot upcoming"></i> Upcoming</span>
-                        <span><i class="dot overdue"></i> Overdue</span>
-                    </div>
-                </article>
-            </div>
-
-            <article class="panel">
-                <div class="panel-heading">
-                    <h3 id="selectedDateTitle">Payment Details</h3>
-                    <strong id="selectedDateTotal">RM 0.00</strong>
+                    <span class="summary-icon">◇</span>
                 </div>
-                <div id="selectedPayments" class="item-list">
-                    <p class="empty">Select a calendar date.</p>
-                </div>
+                <strong id="activeDebtCount">0</strong>
+                <small>Registered debt records</small>
             </article>
 
-            <article class="panel">
-                <div class="panel-heading">
-                    <h3>All Debts</h3>
-                    <input id="debtSearch" class="search-input" placeholder="Search debts...">
-                </div>
-                <div id="allDebts" class="item-list">
-                    <p class="empty">No debts added yet.</p>
-                </div>
-            </article>
         </section>
 
-        <!-- WISHLIST -->
-        <section class="page" id="wishlist">
+        <!-- PERSON SUMMARY -->
+        <section class="section">
             <div class="section-heading">
                 <div>
-                    <div class="eyebrow">THINGS YOU DREAM OF</div>
-                    <h2>My Wishlist ♡</h2>
-                    <p class="muted">Plan your next purchase and track your progress.</p>
+                    <p class="eyebrow">PERSONAL OVERVIEW</p>
+                    <h2>Our commitments</h2>
                 </div>
-                <button class="small-btn" id="exportWishlist">Export JSON</button>
             </div>
 
-            <div class="summary-grid">
-                <article class="summary-card">
-                    <span>Wishlist Value</span>
-                    <strong id="wishTotal">RM 0.00</strong>
-                </article>
-                <article class="summary-card">
-                    <span>Total Saved</span>
-                    <strong id="wishSaved">RM 0.00</strong>
-                </article>
-                <article class="summary-card">
-                    <span>Still Needed</span>
-                    <strong id="wishNeeded">RM 0.00</strong>
-                </article>
-                <article class="summary-card">
-                    <span>Items</span>
-                    <strong id="wishCount">0</strong>
-                </article>
-            </div>
+            <div class="person-grid">
 
-            <div class="content-grid">
-                <article class="panel">
-                    <h3>Add Wishlist Item</h3>
-
-                    <form id="wishlistForm">
-                        <label>Item Name</label>
-                        <input id="wishTitle" placeholder="Example: Yamaha Y15ZR" required>
-
-                        <label>Category</label>
-                        <select id="wishCategory">
-                            <option>Motorcycle</option>
-                            <option>Car</option>
-                            <option>Technology</option>
-                            <option>Gaming</option>
-                            <option>Fashion</option>
-                            <option>Travel</option>
-                            <option>Other</option>
-                        </select>
-
-                        <label>Estimated Price (RM)</label>
-                        <input id="wishPrice" type="number" min="0" step="0.01" required>
-
-                        <label>Amount Already Saved (RM)</label>
-                        <input id="wishSavedInput" type="number" min="0" step="0.01" value="0">
-
-                        <label>Target Purchase Date</label>
-                        <input id="wishDate" type="date">
-
-                        <label>Priority</label>
-                        <select id="wishPriority">
-                            <option>High</option>
-                            <option selected>Medium</option>
-                            <option>Low</option>
-                        </select>
-
-                        <label>Image URL (optional)</label>
-                        <input id="wishImage" type="url" placeholder="https://...">
-
-                        <label>Shopping Link (optional)</label>
-                        <input id="wishLink" type="url" placeholder="https://...">
-
-                        <label>Notes</label>
-                        <textarea id="wishNotes" rows="3"></textarea>
-
-                        <button class="primary-btn" type="submit">Save to Wishlist</button>
-                        <button class="secondary-btn hidden" id="cancelWishEdit" type="button">Cancel Edit</button>
-                        <p class="form-message" id="wishMessage"></p>
-                    </form>
-                </article>
-
-                <article class="panel">
-                    <h3>Wishlist Planner</h3>
-                    <p class="muted">Estimate how much you need to save each month.</p>
-
-                    <label>Select an item</label>
-                    <select id="plannerItem">
-                        <option value="">Choose wishlist item</option>
-                    </select>
-
-                    <div class="planner-result">
-                        <span>Amount remaining</span>
-                        <strong id="plannerRemaining">RM 0.00</strong>
+                <article class="person-card baby-card">
+                    <div class="person-heading">
+                        <div class="avatar">B</div>
+                        <div>
+                            <strong>Baby</strong>
+                            <small>Personal debts</small>
+                        </div>
                     </div>
-                    <div class="planner-result">
-                        <span>Suggested monthly savings</span>
-                        <strong id="plannerMonthly">RM 0.00</strong>
-                    </div>
-                    <p class="muted" id="plannerMessage">Choose an item to calculate.</p>
 
-                    <hr>
-                    <h3>Wishlist Items</h3>
-                    <div class="filter-row">
-                        <input id="wishSearch" placeholder="Search items...">
-                        <select id="wishFilter">
-                            <option value="all">All items</option>
-                            <option value="Motorcycle">Motorcycle</option>
-                            <option value="Car">Car</option>
-                            <option value="Technology">Technology</option>
-                            <option value="Gaming">Gaming</option>
-                            <option value="Fashion">Fashion</option>
-                            <option value="Travel">Travel</option>
-                            <option value="Other">Other</option>
-                        </select>
-                        <select id="wishSort">
-                            <option value="newest">Newest</option>
-                            <option value="price-low">Price: Low to High</option>
-                            <option value="price-high">Price: High to Low</option>
-                            <option value="priority">Priority</option>
-                        </select>
-                    </div>
+                    <strong class="person-amount" id="babyOutstanding">RM 0.00</strong>
+                    <small class="muted">Outstanding balance</small>
                 </article>
-            </div>
 
-            <div id="wishlistItems" class="wishlist-grid">
-                <p class="empty">Your wishlist is empty.</p>
+                <article class="person-card sayang-card">
+                    <div class="person-heading">
+                        <div class="avatar">S</div>
+                        <div>
+                            <strong>Sayang</strong>
+                            <small>Personal debts</small>
+                        </div>
+                    </div>
+
+                    <strong class="person-amount" id="sayangOutstanding">RM 0.00</strong>
+                    <small class="muted">Outstanding balance</small>
+                </article>
+
             </div>
         </section>
 
-        <!-- MONEY -->
-        <section class="page" id="money">
+        <!-- PAYMENT CALENDAR -->
+        <section class="section">
             <div class="section-heading">
                 <div>
-                    <div class="eyebrow">TRACK EVERY RINGGIT</div>
-                    <h2>Income & Expenses</h2>
+                    <p class="eyebrow">PAYMENT SCHEDULE</p>
+                    <h2>Monthly calendar</h2>
+                    <p class="section-description">Select a date to see its payments.</p>
+                </div>
+
+                <div class="calendar-controls">
+                    <button id="prevMonth" class="icon-button" type="button">‹</button>
+                    <strong id="monthLabel">Month Year</strong>
+                    <button id="nextMonth" class="icon-button" type="button">›</button>
                 </div>
             </div>
 
-            <div class="summary-grid">
-                <article class="summary-card">
-                    <span>Income</span>
-                    <strong id="moneyIncome">RM 0.00</strong>
-                </article>
-                <article class="summary-card">
-                    <span>Expenses</span>
-                    <strong id="moneyExpense">RM 0.00</strong>
-                </article>
-                <article class="summary-card">
-                    <span>Net Balance</span>
-                    <strong id="moneyNet">RM 0.00</strong>
-                </article>
-            </div>
+            <div class="calendar-card">
+                <div class="calendar-weekdays">
+                    <span>Sun</span>
+                    <span>Mon</span>
+                    <span>Tue</span>
+                    <span>Wed</span>
+                    <span>Thu</span>
+                    <span>Fri</span>
+                    <span>Sat</span>
+                </div>
 
-            <div class="content-grid">
-                <article class="panel">
-                    <h3>Add Transaction</h3>
-                    <form id="transactionForm">
-                        <label>Type</label>
-                        <select id="transactionType">
-                            <option>Income</option>
-                            <option>Expense</option>
-                        </select>
+                <div id="calendar" class="calendar-grid">
+                    <div class="loading-message">Loading calendar...</div>
+                </div>
 
-                        <label>Description</label>
-                        <input id="transactionTitle" required placeholder="Example: Monthly salary">
-
-                        <label>Category</label>
-                        <input id="transactionCategory" placeholder="Example: Salary, Food, Transport">
-
-                        <label>Amount (RM)</label>
-                        <input id="transactionAmount" type="number" min="0.01" step="0.01" required>
-
-                        <label>Date</label>
-                        <input id="transactionDate" type="date" required>
-
-                        <label>Notes</label>
-                        <textarea id="transactionNote" rows="2"></textarea>
-
-                        <button class="primary-btn" type="submit">Save Transaction</button>
-                        <p class="form-message" id="transactionMessage"></p>
-                    </form>
-                </article>
-
-                <article class="panel">
-                    <h3>Transaction History</h3>
-                    <input id="transactionSearch" class="search-input" placeholder="Search transactions...">
-                    <div id="transactionList" class="item-list"></div>
-                </article>
+                <div class="calendar-legend">
+                    <span><i class="legend-dot unpaid-dot"></i> Unpaid</span>
+                    <span><i class="legend-dot paid-dot"></i> Paid</span>
+                    <span><i class="legend-dot today-dot"></i> Today</span>
+                </div>
             </div>
         </section>
 
-        <!-- SAVINGS -->
-        <section class="page" id="savings">
+        <!-- SELECTED DAY -->
+        <section class="section">
             <div class="section-heading">
                 <div>
-                    <div class="eyebrow">BUILD YOUR FUTURE</div>
-                    <h2>Savings Goals</h2>
+                    <p class="eyebrow">DAILY PAYMENT DETAILS</p>
+                    <h2 id="selectedDateTitle">Selected date</h2>
                 </div>
             </div>
 
-            <div class="panel">
-                <h3>Create Savings Goal</h3>
-                <form id="savingsForm" class="form-grid">
+            <div class="daily-summary-grid">
+                <article class="daily-summary-card">
+                    <span>Outstanding this day</span>
+                    <strong id="dailyOutstanding">RM 0.00</strong>
+                    <small id="dailyTotalDate">Selected date</small>
+                </article>
+
+                <article class="daily-summary-card">
+                    <span>Outstanding this week</span>
+                    <strong id="weeklyOutstanding">RM 0.00</strong>
+                    <small id="weeklyDateRange">Sunday – Saturday</small>
+                </article>
+            </div>
+
+            <div class="payment-list-card">
+                <div class="list-heading">
                     <div>
-                        <label>Goal Name</label>
-                        <input id="savingTitle" required placeholder="Example: Emergency Fund">
+                        <h3>Payments for this date</h3>
+                        <small id="selectedPaymentCount">0 payments</small>
                     </div>
-                    <div>
-                        <label>Target Amount (RM)</label>
-                        <input id="savingTarget" type="number" min="0.01" step="0.01" required>
+                </div>
+
+                <div id="selectedPayments" class="payment-list">
+                    <div class="empty-state">Select a date to view payments.</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ADD DEBT -->
+        <section class="section" id="addDebtSection">
+            <div class="section-heading">
+                <div>
+                    <p class="eyebrow">NEW COMMITMENT</p>
+                    <h2>Add a debt</h2>
+                    <p class="section-description">Record a new monthly payment commitment.</p>
+                </div>
+            </div>
+
+            <div class="form-card">
+                <form id="debtForm">
+
+                    <div class="form-grid">
+
+                        <div class="form-group">
+                            <label for="person">Person</label>
+                            <select id="person" name="person" required>
+                                <option value="Baby">Baby</option>
+                                <option value="Sayang">Sayang</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="name">Debt name</label>
+                            <input
+                                type="text"
+                                id="name"
+                                name="name"
+                                placeholder="e.g. Atome, SPayLater"
+                                required
+                                maxlength="100"
+                            >
+                        </div>
+
+                        <div class="form-group">
+                            <label for="amount">Monthly payment (RM)</label>
+                            <input
+                                type="number"
+                                id="amount"
+                                name="amount"
+                                placeholder="0.00"
+                                min="0.01"
+                                step="0.01"
+                                required
+                            >
+                        </div>
+
+                        <div class="form-group">
+                            <label for="months">Number of months</label>
+                            <input
+                                type="number"
+                                id="months"
+                                name="months"
+                                placeholder="e.g. 6"
+                                min="1"
+                                max="600"
+                                step="1"
+                                required
+                            >
+                        </div>
+
+                        <div class="form-group">
+                            <label for="first_due_date">First payment date</label>
+                            <input
+                                type="date"
+                                id="first_due_date"
+                                name="first_due_date"
+                                required
+                            >
+                        </div>
+
+                        <div class="form-group">
+                            <label for="note">Note (optional)</label>
+                            <input
+                                type="text"
+                                id="note"
+                                name="note"
+                                placeholder="Additional information"
+                                maxlength="500"
+                            >
+                        </div>
+
                     </div>
-                    <div>
-                        <label>Already Saved (RM)</label>
-                        <input id="savingCurrent" type="number" min="0" step="0.01" value="0">
+
+                    <div class="form-footer">
+                        <p>All payments will be scheduled monthly from your first payment date.</p>
+                        <button id="submitBtn" class="primary-button" type="submit">
+                            + Add Debt
+                        </button>
                     </div>
-                    <div>
-                        <label>Target Date</label>
-                        <input id="savingDate" type="date">
-                    </div>
-                    <div class="full-width">
-                        <label>Notes</label>
-                        <input id="savingNote">
-                    </div>
-                    <button class="primary-btn" type="submit">Create Goal</button>
+
+                    <p id="formMessage" class="form-message" aria-live="polite"></p>
                 </form>
-                <p class="form-message" id="savingMessage"></p>
+            </div>
+        </section>
+
+        <!-- ALL DEBTS -->
+        <section class="section" id="allDebtsSection">
+            <div class="section-heading">
+                <div>
+                    <p class="eyebrow">ALL COMMITMENTS</p>
+                    <h2>Our debts</h2>
+                    <p class="section-description">View each debt and its payment progress.</p>
+                </div>
             </div>
 
-            <div id="savingsList" class="wishlist-grid"></div>
+            <div class="filter-bar">
+                <input
+                    id="debtSearch"
+                    type="search"
+                    placeholder="Search debt..."
+                    aria-label="Search debts"
+                >
+
+                <select id="personFilter" aria-label="Filter by person">
+                    <option value="All">Both people</option>
+                    <option value="Baby">Baby</option>
+                    <option value="Sayang">Sayang</option>
+                </select>
+
+                <select id="statusFilter" aria-label="Filter by status">
+                    <option value="All">All statuses</option>
+                    <option value="Active">Active</option>
+                    <option value="Completed">Completed</option>
+                </select>
+            </div>
+
+            <div id="debtList" class="debt-list">
+                <div class="loading-message">Loading debts...</div>
+            </div>
         </section>
+
+        <footer class="footer">
+            <span>PERHUTANGAN ♡</span>
+            <small>Keeping our commitments organised, together.</small>
+        </footer>
 
     </main>
 
-    <footer>
-        <p>Perhutangan ♡</p>
-        <small>Made with care for your family's financial journey.</small>
-        <button id="soundToggle" class="sound-btn" type="button">Sound: Off</button>
-    </footer>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-</div>
 </body>
 </html>

@@ -1,3 +1,4 @@
+
 "use strict";
 
 /* =========================================
@@ -37,15 +38,13 @@ const $ = id => document.getElementById(id);
 /* DEBT TYPES */
 
 const DEBT_TYPES = [
-    "Atome PayLater",
-    "Atome Card",
-    "Atome Loan",
-    "SPayLater",
-    "SLoan",
-    "TikTok PayLater",
     "TikTok Loan",
-    "Boost Loan",
-    "Other"
+    "TikTok PayLater",
+    "SLoan",
+    "SPayLater",
+    "Atome Loan",
+    "Atome Card",
+    "Atome PayLater"
 ];
 
 /* HELPERS */
@@ -182,14 +181,19 @@ function getDebtPayments(debtId) {
 }
 
 function getDebtType(debt) {
-    const type = debt.debt_type || "Other";
-    return DEBT_TYPES.includes(type) ? type : "Other";
+    const storedType = String(debt?.debt_type || "").trim();
+
+    const matchingType = DEBT_TYPES.find(type =>
+        type.toLowerCase() === storedType.toLowerCase()
+    );
+
+    return matchingType || storedType || "Uncategorised";
 }
 
 /* PAYMENT SCHEDULE */
 
 function getSchedule(debt) {
-    if (!debt) return [];
+    if (!debt || !debt.first_due_date) return [];
 
     const amount = Number(debt.amount) || 0;
     const months = Number(debt.months) || 0;
@@ -268,6 +272,7 @@ async function loadData() {
         payments = paymentResult.data || [];
 
         setConnection("connected", "Connected");
+
         renderAll();
 
     } catch (error) {
@@ -289,7 +294,7 @@ async function loadData() {
     }
 }
 
-/* SUMMARY CALCULATIONS */
+/* DASHBOARD SUMMARY */
 
 function renderSummary() {
     const schedule = allSchedule();
@@ -299,18 +304,31 @@ function renderSummary() {
 
     const today = localDate(new Date());
 
-    const overdue = unpaid.filter(
-        item => item.due_date < today
+    // Unpaid instalments due in the selected month
+    const thisMonth = unpaid.filter(item =>
+        sameMonth(item.due_date, currentMonth)
     );
 
-    const thisMonth = schedule.filter(
-        item => sameMonth(item.due_date, currentMonth)
+    // Unpaid instalments that are past their due date
+    const overdue = unpaid.filter(item =>
+        item.due_date < today
     );
 
-    const todayItems = unpaid.filter(
-        item => item.due_date === today
+    // Count unique debt accounts, not individual instalments
+    const activeDebtThisMonth = new Set(
+        thisMonth.map(item => String(item.debt_id))
+    ).size;
+
+    const activeDebtOverall = new Set(
+        unpaid.map(item => String(item.debt_id))
+    ).size;
+
+    // Payments due today
+    const todayItems = unpaid.filter(item =>
+        item.due_date === today
     );
 
+    // This calendar week: Sunday to Saturday
     const todayDate = parseDate(today);
 
     const weekStart = new Date(todayDate);
@@ -321,46 +339,68 @@ function renderSummary() {
 
     const weekItems = unpaid.filter(item => {
         const date = parseDate(item.due_date);
+
         return date >= weekStart && date <= weekEnd;
     });
 
+    // Next 7 days, including today
     const upcomingEnd = new Date(todayDate);
-    upcomingEnd.setDate(upcomingEnd.getDate() + 7);
+    upcomingEnd.setDate(upcomingEnd.getDate() + 6);
 
     const upcoming = unpaid.filter(item => {
         const date = parseDate(item.due_date);
+
         return date >= todayDate && date <= upcomingEnd;
     });
 
-    $("totalOutstanding").textContent = money(sumPayments(unpaid));
-    $("totalPaid").textContent = money(sumPayments(paid));
-    $("totalThisMonth").textContent = money(sumPayments(thisMonth));
-    $("totalOverdue").textContent = money(sumPayments(overdue));
+    // Main dashboard
+    $("totalThisMonth").textContent =
+        money(sumPayments(thisMonth));
 
-    $("todayOutstanding").textContent = money(sumPayments(todayItems));
-    $("weekOutstanding").textContent = money(sumPayments(weekItems));
-    $("upcomingOutstanding").textContent = money(sumPayments(upcoming));
+    $("activeDebtThisMonth").textContent =
+        activeDebtThisMonth;
+
+    $("totalOutstanding").textContent =
+        money(sumPayments(unpaid));
+
+    $("activeDebtOverall").textContent =
+        activeDebtOverall;
+
+    // Secondary dashboard
+    $("totalPaid").textContent =
+        money(sumPayments(paid));
+
+    $("dueThisMonth").textContent =
+        money(sumPayments(thisMonth));
+
+    $("totalOverdue").textContent =
+        money(sumPayments(overdue));
+
+    // Quick summary
+    $("todayOutstanding").textContent =
+        money(sumPayments(todayItems));
+
+    $("weekOutstanding").textContent =
+        money(sumPayments(weekItems));
+
+    $("upcomingOutstanding").textContent =
+        money(sumPayments(upcoming));
 }
 
 /* DEBT TYPE OVERVIEW */
 
 function renderDebtTypeSummary() {
-
     const schedule = allSchedule();
 
-    // Exclude instalments already marked as paid.
     const unpaid = schedule.filter(item => !item.paid);
 
-    // Count instalments due in the selected calendar month.
     const thisMonth = unpaid.filter(item =>
         sameMonth(item.due_date, currentMonth)
     );
 
-    // Overall counts.
     $("typeMonthCount").textContent = thisMonth.length;
     $("typeAllCount").textContent = unpaid.length;
 
-    // Prepare every debt type, including types with zero debts.
     const breakdown = {};
 
     DEBT_TYPES.forEach(type => {
@@ -372,29 +412,27 @@ function renderDebtTypeSummary() {
         };
     });
 
-    // Count all unpaid instalments across every month.
+    // Overall unpaid instalments
     unpaid.forEach(item => {
-
         const type = getDebtType(item.debt);
+
+        if (!breakdown[type]) return;
 
         breakdown[type].allCount++;
         breakdown[type].allAmount += Number(item.amount) || 0;
-
     });
 
-    // Count unpaid instalments due in the selected month.
+    // Unpaid instalments due in the selected month
     thisMonth.forEach(item => {
-
         const type = getDebtType(item.debt);
+
+        if (!breakdown[type]) return;
 
         breakdown[type].monthCount++;
         breakdown[type].monthAmount += Number(item.amount) || 0;
-
     });
 
-    // Display all debt types.
     $("debtTypeBreakdown").innerHTML = DEBT_TYPES.map(type => {
-
         const data = breakdown[type];
 
         return `
@@ -416,7 +454,6 @@ function renderDebtTypeSummary() {
 
             </article>
         `;
-
     }).join("");
 }
 
@@ -508,22 +545,24 @@ function renderCalendar() {
     }
 
     $("calendarDays").innerHTML = html;
+}
 
-    document.querySelectorAll(".calendar-day").forEach(button => {
-        button.addEventListener("click", () => {
-            selectedDate = button.dataset.date;
+function handleCalendarClick(event) {
+    const button = event.target.closest(".calendar-day");
 
-            const clickedDate = parseDate(selectedDate);
+    if (!button) return;
 
-            currentMonth = new Date(
-                clickedDate.getFullYear(),
-                clickedDate.getMonth(),
-                1
-            );
+    selectedDate = button.dataset.date;
 
-            renderAll();
-        });
-    });
+    const clickedDate = parseDate(selectedDate);
+
+    currentMonth = new Date(
+        clickedDate.getFullYear(),
+        clickedDate.getMonth(),
+        1
+    );
+
+    renderAll();
 }
 
 /* SELECTED DATE PAYMENTS */
@@ -595,9 +634,14 @@ function renderMonthlyTotals() {
     const paid = schedule.filter(item => item.paid);
     const unpaid = schedule.filter(item => !item.paid);
 
-    $("monthlyScheduled").textContent = money(sumPayments(schedule));
-    $("monthlyPaid").textContent = money(sumPayments(paid));
-    $("monthlyRemaining").textContent = money(sumPayments(unpaid));
+    $("monthlyScheduled").textContent =
+        money(sumPayments(schedule));
+
+    $("monthlyPaid").textContent =
+        money(sumPayments(paid));
+
+    $("monthlyRemaining").textContent =
+        money(sumPayments(unpaid));
 
     const groups = {
         Capiq: { scheduled: 0, paid: 0, remaining: 0 },
@@ -610,12 +654,12 @@ function renderMonthlyTotals() {
 
         if (!groups[person]) return;
 
-        groups[person].scheduled += Number(item.amount);
+        groups[person].scheduled += Number(item.amount) || 0;
 
         if (item.paid) {
-            groups[person].paid += Number(item.amount);
+            groups[person].paid += Number(item.amount) || 0;
         } else {
-            groups[person].remaining += Number(item.amount);
+            groups[person].remaining += Number(item.amount) || 0;
         }
     });
 
@@ -687,7 +731,7 @@ function renderDebts() {
 
         const matchesPerson =
             personFilter === "all" ||
-            personName(debt.person) === personFilter;
+            personName(debt.person) === personName(personFilter);
 
         const matchesType =
             typeFilter === "all" ||
@@ -698,7 +742,8 @@ function renderDebts() {
         const matchesStatus =
             statusFilter === "all" ||
             (statusFilter === "paid" && debtStatus === "completed") ||
-            (statusFilter === "unpaid" && debtStatus === "active") ||
+            (statusFilter === "unpaid" &&
+                (debtStatus === "active" || debtStatus === "overdue")) ||
             (statusFilter === "overdue" && debtStatus === "overdue");
 
         return (
@@ -852,30 +897,34 @@ function renderDebts() {
             </article>
         `;
     }).join("");
+}
 
-    document.querySelectorAll("[data-action]").forEach(button => {
-        button.addEventListener("click", async () => {
-            const action = button.dataset.action;
-            const debtId = button.dataset.debt;
+/* DEBT ACTION BUTTONS */
 
-            button.disabled = true;
+async function handleDebtAction(event) {
+    const button = event.target.closest("[data-action]");
 
-            try {
-                if (action === "pay") {
-                    await markPaymentPaid(debtId, button.dataset.date);
+    if (!button) return;
 
-                } else if (action === "undo") {
-                    await undoLastPayment(debtId);
+    const action = button.dataset.action;
+    const debtId = button.dataset.debt;
 
-                } else if (action === "delete") {
-                    await deleteDebt(debtId);
-                }
+    button.disabled = true;
 
-            } finally {
-                button.disabled = false;
-            }
-        });
-    });
+    try {
+        if (action === "pay") {
+            await markPaymentPaid(debtId, button.dataset.date);
+
+        } else if (action === "undo") {
+            await undoLastPayment(debtId);
+
+        } else if (action === "delete") {
+            await deleteDebt(debtId);
+        }
+
+    } finally {
+        button.disabled = false;
+    }
 }
 
 /* MARK PAYMENT PAID */
@@ -921,6 +970,7 @@ async function markPaymentPaid(debtId, dueDate) {
         if (result.error) throw result.error;
 
         showToast("Payment successfully marked as paid! ♡");
+
         await loadData();
 
     } catch (error) {
@@ -959,6 +1009,7 @@ async function undoLastPayment(debtId) {
         if (error) throw error;
 
         showToast("Payment status has been undone.");
+
         await loadData();
 
     } catch (error) {
@@ -996,6 +1047,7 @@ async function deleteDebt(debtId) {
         if (debtError) throw debtError;
 
         showToast("Debt deleted successfully.");
+
         await loadData();
 
     } catch (error) {
@@ -1116,7 +1168,7 @@ async function saveDebt(event) {
     }
 }
 
-/* NAVIGATION */
+/* CALENDAR NAVIGATION */
 
 function changeMonth(direction) {
     currentMonth = new Date(
@@ -1134,9 +1186,9 @@ function changeMonth(direction) {
 
 function renderAll() {
     renderSummary();
-    renderDebtTypeSummary();
     renderCalendar();
     renderSelectedDate();
+    renderDebtTypeSummary();
     renderMonthlyTotals();
     renderDebts();
 }
@@ -1163,6 +1215,16 @@ function initializeEvents() {
     $("nextMonth").addEventListener(
         "click",
         () => changeMonth(1)
+    );
+
+    $("calendarDays").addEventListener(
+        "click",
+        handleCalendarClick
+    );
+
+    $("debtsContainer").addEventListener(
+        "click",
+        handleDebtAction
     );
 
     $("searchDebt").addEventListener("input", renderDebts);

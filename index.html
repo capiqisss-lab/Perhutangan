@@ -3,11 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#08120d">
-    <title>Perhutangan ♡ | Debt Tracker</title>
+    <meta name="theme-color" content="#101810">
+
+    <title>Perhutangan ♡ | Our Debt Tracker</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
     <link rel="stylesheet" href="styles.css">
@@ -23,7 +25,7 @@
     <header class="topbar">
         <a href="#" class="brand">
             <span class="brand-icon">♡</span>
-            <span>
+            <span class="brand-copy">
                 <strong>PERHUTANGAN</strong>
                 <small>OUR DEBT TRACKER</small>
             </span>
@@ -35,7 +37,7 @@
                 Connecting...
             </span>
 
-            <button id="refreshBtn" class="icon-button" type="button" title="Refresh">
+            <button id="refreshBtn" class="icon-button" type="button" aria-label="Refresh data">
                 ↻
             </button>
         </div>
@@ -47,7 +49,9 @@
             <div>
                 <p class="eyebrow">OUR SHARED COMMITMENTS</p>
                 <h1>Manage your debts<span class="heart"> ♡</span></h1>
-                <p class="subtitle">A simple place to keep track of what we owe and what we have paid.</p>
+                <p class="subtitle">
+                    A simple place to keep track of what we owe and what we have paid.
+                </p>
             </div>
 
             <div class="today-card">
@@ -57,7 +61,7 @@
             </div>
         </section>
 
-        <!-- SUMMARY -->
+        <!-- DASHBOARD SUMMARY -->
         <section class="summary-grid">
 
             <article class="summary-card summary-main">
@@ -93,64 +97,82 @@
                     <span class="summary-icon">◇</span>
                 </div>
                 <strong id="activeDebtCount">0</strong>
-                <small>Registered debt records</small>
+                <small>Uncompleted debt records</small>
             </article>
 
         </section>
 
-        <!-- PERSON SUMMARY -->
+        <!-- PERSONAL OVERVIEW -->
         <section class="section">
             <div class="section-heading">
                 <div>
                     <p class="eyebrow">PERSONAL OVERVIEW</p>
                     <h2>Our commitments</h2>
+                    <p class="section-description">
+                        Outstanding instalments for each person and shared debts.
+                    </p>
                 </div>
             </div>
 
             <div class="person-grid">
 
-                <article class="person-card baby-card">
+                <article class="person-card capiq-card">
                     <div class="person-heading">
-                        <div class="avatar">B</div>
+                        <div class="avatar">C</div>
                         <div>
-                            <strong>Baby</strong>
+                            <strong>Capiq</strong>
                             <small>Personal debts</small>
                         </div>
                     </div>
 
-                    <strong class="person-amount" id="babyOutstanding">RM 0.00</strong>
+                    <strong class="person-amount" id="capiqOutstanding">RM 0.00</strong>
                     <small class="muted">Outstanding balance</small>
                 </article>
 
-                <article class="person-card sayang-card">
+                <article class="person-card eisya-card">
                     <div class="person-heading">
-                        <div class="avatar">S</div>
+                        <div class="avatar">E</div>
                         <div>
-                            <strong>Sayang</strong>
+                            <strong>Eisya</strong>
                             <small>Personal debts</small>
                         </div>
                     </div>
 
-                    <strong class="person-amount" id="sayangOutstanding">RM 0.00</strong>
+                    <strong class="person-amount" id="eisyaOutstanding">RM 0.00</strong>
+                    <small class="muted">Outstanding balance</small>
+                </article>
+
+                <article class="person-card shared-card">
+                    <div class="person-heading">
+                        <div class="avatar">♡</div>
+                        <div>
+                            <strong>Shared</strong>
+                            <small>Both of us</small>
+                        </div>
+                    </div>
+
+                    <strong class="person-amount" id="sharedOutstanding">RM 0.00</strong>
                     <small class="muted">Outstanding balance</small>
                 </article>
 
             </div>
         </section>
 
-        <!-- PAYMENT CALENDAR -->
+        <!-- MONTHLY CALENDAR -->
         <section class="section">
-            <div class="section-heading">
+            <div class="section-heading calendar-heading">
                 <div>
                     <p class="eyebrow">PAYMENT SCHEDULE</p>
                     <h2>Monthly calendar</h2>
-                    <p class="section-description">Select a date to see its payments.</p>
+                    <p class="section-description">
+                        Select a date to see its scheduled payments.
+                    </p>
                 </div>
 
                 <div class="calendar-controls">
-                    <button id="prevMonth" class="icon-button" type="button">‹</button>
+                    <button id="prevMonth" class="icon-button" type="button" aria-label="Previous month">‹</button>
                     <strong id="monthLabel">Month Year</strong>
-                    <button id="nextMonth" class="icon-button" type="button">›</button>
+                    <button id="nextMonth" class="icon-button" type="button" aria-label="Next month">›</button>
                 </div>
             </div>
 
@@ -177,7 +199,7 @@
             </div>
         </section>
 
-        <!-- SELECTED DAY -->
+        <!-- DAILY PAYMENT DETAILS -->
         <section class="section">
             <div class="section-heading">
                 <div>
@@ -220,7 +242,9 @@
                 <div>
                     <p class="eyebrow">NEW COMMITMENT</p>
                     <h2>Add a debt</h2>
-                    <p class="section-description">Record a new monthly payment commitment.</p>
+                    <p class="section-description">
+                        Record a new monthly payment commitment.
+                    </p>
                 </div>
             </div>
 
@@ -232,8 +256,9 @@
                         <div class="form-group">
                             <label for="person">Person</label>
                             <select id="person" name="person" required>
-                                <option value="Baby">Baby</option>
-                                <option value="Sayang">Sayang</option>
+                                <option value="Sayang">Capiq</option>
+                                <option value="Baby">Eisya</option>
+                                <option value="Everyone">Shared (Both)</option>
                             </select>
                         </div>
 
@@ -244,8 +269,8 @@
                                 id="name"
                                 name="name"
                                 placeholder="e.g. Atome, SPayLater"
-                                required
                                 maxlength="100"
+                                required
                             >
                         </div>
 
@@ -300,13 +325,17 @@
                     </div>
 
                     <div class="form-footer">
-                        <p>All payments will be scheduled monthly from your first payment date.</p>
+                        <p>
+                            Payments will be scheduled monthly from your first payment date.
+                        </p>
+
                         <button id="submitBtn" class="primary-button" type="submit">
                             + Add Debt
                         </button>
                     </div>
 
                     <p id="formMessage" class="form-message" aria-live="polite"></p>
+
                 </form>
             </div>
         </section>
@@ -317,7 +346,9 @@
                 <div>
                     <p class="eyebrow">ALL COMMITMENTS</p>
                     <h2>Our debts</h2>
-                    <p class="section-description">View each debt and its payment progress.</p>
+                    <p class="section-description">
+                        View each debt and its payment progress.
+                    </p>
                 </div>
             </div>
 
@@ -330,9 +361,10 @@
                 >
 
                 <select id="personFilter" aria-label="Filter by person">
-                    <option value="All">Both people</option>
-                    <option value="Baby">Baby</option>
-                    <option value="Sayang">Sayang</option>
+                    <option value="All">Everyone</option>
+                    <option value="Sayang">Capiq</option>
+                    <option value="Baby">Eisya</option>
+                    <option value="Everyone">Shared (Both)</option>
                 </select>
 
                 <select id="statusFilter" aria-label="Filter by status">

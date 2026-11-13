@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -54,28 +55,55 @@
             </button>
         </section>
 
-        <!-- MAIN SUMMARY -->
-        <section class="summary-grid" aria-label="Debt summaries">
+        <!-- MAIN DASHBOARD -->
+        <section class="summary-grid" aria-label="Main debt summaries">
 
             <article class="summary-card summary-main">
                 <div class="summary-icon">♡</div>
-                <p>Total outstanding</p>
-                <h2 id="totalOutstanding">RM 0.00</h2>
-                <span>Remaining debt</span>
+                <p>Total outstanding this month</p>
+                <h2 id="totalThisMonth">RM 0.00</h2>
+                <span>Unpaid instalments this month</span>
             </article>
+
+            <article class="summary-card">
+                <div class="summary-icon">▦</div>
+                <p>Active debt this month</p>
+                <h2 id="activeDebtThisMonth">0</h2>
+                <span>Debt accounts with payments due</span>
+            </article>
+
+            <article class="summary-card">
+                <div class="summary-icon">♡</div>
+                <p>Total overall outstanding</p>
+                <h2 id="totalOutstanding">RM 0.00</h2>
+                <span>All remaining unpaid instalments</span>
+            </article>
+
+            <article class="summary-card">
+                <div class="summary-icon">▤</div>
+                <p>Total overall active debt</p>
+                <h2 id="activeDebtOverall">0</h2>
+                <span>Debt accounts not fully paid</span>
+            </article>
+
+        </section>
+
+        <!-- SECONDARY DASHBOARD -->
+        <section class="summary-grid secondary-summary-grid"
+            aria-label="Payment summaries">
 
             <article class="summary-card">
                 <div class="summary-icon">✓</div>
                 <p>Total paid</p>
                 <h2 id="totalPaid">RM 0.00</h2>
-                <span>Payments completed</span>
+                <span>All completed payments</span>
             </article>
 
             <article class="summary-card">
                 <div class="summary-icon">▦</div>
                 <p>Due this month</p>
-                <h2 id="totalThisMonth">RM 0.00</h2>
-                <span>Monthly commitments</span>
+                <h2 id="dueThisMonth">RM 0.00</h2>
+                <span>Unpaid monthly commitments</span>
             </article>
 
             <article class="summary-card">
@@ -99,65 +127,14 @@
             <article class="quick-card">
                 <span class="quick-label">THIS WEEK</span>
                 <strong id="weekOutstanding">RM 0.00</strong>
-                <small>Due this week</small>
+                <small>Due this calendar week</small>
             </article>
 
             <article class="quick-card">
                 <span class="quick-label">NEXT 7 DAYS</span>
                 <strong id="upcomingOutstanding">RM 0.00</strong>
-                <small>Upcoming payments</small>
+                <small>Today and the next 6 days</small>
             </article>
-
-        </section>
-
-        <!-- DEBT TYPE OVERVIEW -->
-        <section class="panel debt-type-overview">
-
-            <div class="panel-heading">
-                <div>
-                    <p class="eyebrow">DEBT TYPE OVERVIEW</p>
-                    <h2>Where our debts come from ♡</h2>
-                    <small>Unpaid instalments grouped by debt type.</small>
-                </div>
-            </div>
-
-            <div class="type-total-grid">
-
-                <article class="type-total-card">
-                    <span>THIS MONTH</span>
-                    <strong id="typeMonthCount">0</strong>
-                    <small>Unpaid instalments due this month</small>
-                </article>
-
-                <article class="type-total-card">
-                    <span>ALL MONTHS</span>
-                    <strong id="typeAllCount">0</strong>
-                    <small>All remaining unpaid instalments</small>
-                </article>
-
-            </div>
-
-            <div class="type-breakdown-heading">
-                <strong>Breakdown by debt type</strong>
-                <small>Paid instalments are excluded from these counts.</small>
-            </div>
-
-            <div class="debt-type-table">
-
-                <div class="debt-type-table-header">
-                    <span>Debt type</span>
-                    <span>This month</span>
-                    <span>All months</span>
-                </div>
-
-                <div id="debtTypeBreakdown" class="debt-type-breakdown">
-                    <div class="empty-state">
-                        <span>♡</span>
-                        <p>Your debt breakdown will appear here.</p>
-                    </div>
-                </div>
-
-            </div>
 
         </section>
 
@@ -225,6 +202,57 @@
                 </div>
 
             </section>
+
+        </section>
+
+        <!-- DEBT TYPE OVERVIEW -->
+        <section class="panel debt-type-overview">
+
+            <div class="panel-heading">
+                <div>
+                    <p class="eyebrow">DEBT TYPE OVERVIEW</p>
+                    <h2>Where our debts come from ♡</h2>
+                    <small>Unpaid instalments grouped by debt type.</small>
+                </div>
+            </div>
+
+            <div class="type-total-grid">
+
+                <article class="type-total-card">
+                    <span>THIS MONTH</span>
+                    <strong id="typeMonthCount">0</strong>
+                    <small>Unpaid instalments due this month</small>
+                </article>
+
+                <article class="type-total-card">
+                    <span>ALL MONTHS</span>
+                    <strong id="typeAllCount">0</strong>
+                    <small>All remaining unpaid instalments</small>
+                </article>
+
+            </div>
+
+            <div class="type-breakdown-heading">
+                <strong>Breakdown by debt type</strong>
+                <small>Paid instalments are excluded from these counts.</small>
+            </div>
+
+            <div class="debt-type-table">
+
+                <div class="debt-type-table-header">
+                    <span>Debt type</span>
+                    <span>This month</span>
+                    <span>All months</span>
+                </div>
+
+                <div id="debtTypeBreakdown" class="debt-type-breakdown">
+                    <div class="empty-state">
+                        <span>♡</span>
+                        <p>Your debt breakdown will appear here.</p>
+                    </div>
+                </div>
+
+            </div>
 
         </section>
 
@@ -327,15 +355,13 @@
 
                 <select id="debtTypeFilter" aria-label="Filter by debt type">
                     <option value="all">All debt types</option>
-                    <option value="Atome PayLater">Atome PayLater</option>
-                    <option value="Atome Card">Atome Card</option>
-                    <option value="Atome Loan">Atome Loan</option>
-                    <option value="SPayLater">SPayLater</option>
-                    <option value="SLoan">SLoan</option>
-                    <option value="TikTok PayLater">TikTok PayLater</option>
                     <option value="TikTok Loan">TikTok Loan</option>
-                    <option value="Boost Loan">Boost Loan</option>
-                    <option value="Other">Other</option>
+                    <option value="TikTok PayLater">TikTok PayLater</option>
+                    <option value="SLoan">SLoan</option>
+                    <option value="SPayLater">SPayLater</option>
+                    <option value="Atome Loan">Atome Loan</option>
+                    <option value="Atome Card">Atome Card</option>
+                    <option value="Atome PayLater">Atome PayLater</option>
                 </select>
 
                 <select id="statusFilter" aria-label="Filter by payment status">
@@ -392,20 +418,18 @@
 
             <label for="debtType">Debt type</label>
             <select id="debtType" required>
-                <option value="Atome PayLater">Atome PayLater</option>
-                <option value="Atome Card">Atome Card</option>
-                <option value="Atome Loan">Atome Loan</option>
-                <option value="SPayLater">SPayLater</option>
-                <option value="SLoan">SLoan</option>
-                <option value="TikTok PayLater">TikTok PayLater</option>
                 <option value="TikTok Loan">TikTok Loan</option>
-                <option value="Boost Loan">Boost Loan</option>
-                <option value="Other">Other</option>
+                <option value="TikTok PayLater">TikTok PayLater</option>
+                <option value="SLoan">SLoan</option>
+                <option value="SPayLater">SPayLater</option>
+                <option value="Atome Loan">Atome Loan</option>
+                <option value="Atome Card">Atome Card</option>
+                <option value="Atome PayLater">Atome PayLater</option>
             </select>
 
             <label for="debtName">Debt name</label>
             <input id="debtName" type="text"
-                placeholder="e.g. Atome purchase, phone..."
+                placeholder="e.g. Phone, purchase..."
                 required maxlength="100">
 
             <label for="debtAmount">Monthly instalment (RM)</label>

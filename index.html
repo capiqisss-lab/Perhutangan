@@ -3,456 +3,336 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#eaf6ff">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#eaf5ff">
+    <meta name="description" content="Perhutangan — a simple shared debt tracker.">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Perhutangan">
 
     <title>Perhutangan ♡</title>
 
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="icon.svg">
+    <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="styles.css">
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="app.js" defer></script>
 </head>
 
 <body>
+    <div class="app-shell">
 
-<div class="app-shell">
+        <header class="topbar">
+            <a class="brand" href="./" aria-label="Perhutangan home">
+                <span class="brand-icon">♡</span>
+                <span>
+                    <strong>Perhutangan</strong>
+                    <small>OUR LITTLE DEBT TRACKER</small>
+                </span>
+            </a>
 
-    <!-- HEADER -->
-    <header class="topbar">
-        <div class="brand">
-            <div class="brand-icon">♡</div>
-            <div>
-                <h1>Perhutangan <span>♡</span></h1>
-                <p>OUR SHARED FINANCES</p>
+            <div class="connection-status">
+                <span id="connectionDot" class="status-dot"></span>
+                <span id="connectionText">Connecting...</span>
             </div>
-        </div>
+        </header>
 
-        <div class="connection-status">
-            <span id="connectionDot" class="status-dot"></span>
-            <span id="connectionText">Connecting...</span>
-        </div>
-    </header>
+        <main class="main-content">
 
-
-    <!-- WELCOME -->
-    <section class="welcome-section">
-        <div>
-            <span class="eyebrow">WELCOME TO YOUR FINANCE SPACE</span>
-            <h2>Let's keep track of<br><span>our commitments.</span></h2>
-            <p>Every payment, every little progress, together.</p>
-        </div>
-
-        <div class="welcome-decoration">☁️ ♡</div>
-    </section>
-
-
-    <!-- SUMMARY -->
-    <section class="summary-grid">
-
-        <article class="summary-card">
-            <div class="summary-top">
-                <span>Total Outstanding</span>
-                <div class="summary-icon blue">RM</div>
-            </div>
-            <h3 id="totalOutstanding">RM 0.00</h3>
-            <small>All unpaid instalments</small>
-        </article>
-
-        <article class="summary-card">
-            <div class="summary-top">
-                <span>Paid So Far</span>
-                <div class="summary-icon green">✓</div>
-            </div>
-            <h3 id="totalPaid">RM 0.00</h3>
-            <small>Successfully completed payments</small>
-        </article>
-
-        <article class="summary-card">
-            <div class="summary-top">
-                <span>Due This Month</span>
-                <div class="summary-icon purple">▦</div>
-            </div>
-            <h3 id="totalThisMonth">RM 0.00</h3>
-            <small>Scheduled this month</small>
-        </article>
-
-        <article class="summary-card">
-            <div class="summary-top">
-                <span>Overdue</span>
-                <div class="summary-icon orange">!</div>
-            </div>
-            <h3 id="totalOverdue">RM 0.00</h3>
-            <small>Unpaid past payments</small>
-        </article>
-
-    </section>
-
-
-    <!-- QUICK TOTALS -->
-    <section class="quick-grid">
-
-        <article class="quick-card">
-            <span>Today's Outstanding</span>
-            <strong id="todayOutstanding">RM 0.00</strong>
-        </article>
-
-        <article class="quick-card">
-            <span>This Week's Outstanding</span>
-            <strong id="weekOutstanding">RM 0.00</strong>
-        </article>
-
-        <article class="quick-card">
-            <span>Upcoming in 7 Days</span>
-            <strong id="upcomingOutstanding">RM 0.00</strong>
-        </article>
-
-    </section>
-
-
-    <!-- MAIN CONTENT -->
-    <main class="main-grid">
-
-        <!-- CALENDAR -->
-        <section class="panel calendar-panel">
-
-            <div class="panel-heading">
+            <section class="welcome-section">
                 <div>
-                    <span class="eyebrow">PAYMENT SCHEDULE</span>
-                    <h2>Monthly Calendar</h2>
+                    <p class="eyebrow">SHARED FAMILY FINANCE</p>
+                    <h1>Our commitments <span>♡</span></h1>
+                    <p class="welcome-description">
+                        A simple place to keep track of what we owe.
+                    </p>
                 </div>
 
-                <button class="primary-button add-button" id="openAddDebt">
-                    + Add Debt
+                <button id="openAddDebt" class="primary-button" type="button">
+                    <span>＋</span> Add debt
                 </button>
-            </div>
+            </section>
 
-            <div class="calendar-navigation">
-                <button class="icon-button" id="previousMonth" aria-label="Previous month">‹</button>
-                <h3 id="calendarMonth">November 2026</h3>
-                <button class="icon-button" id="nextMonth" aria-label="Next month">›</button>
-            </div>
+            <section class="summary-grid" aria-label="Debt summaries">
+                <article class="summary-card summary-main">
+                    <div class="summary-icon">♡</div>
+                    <p>Total outstanding</p>
+                    <h2 id="totalOutstanding">RM 0.00</h2>
+                    <span>Remaining debt</span>
+                </article>
 
-            <div class="calendar-weekdays">
-                <span>Sun</span>
-                <span>Mon</span>
-                <span>Tue</span>
-                <span>Wed</span>
-                <span>Thu</span>
-                <span>Fri</span>
-                <span>Sat</span>
-            </div>
+                <article class="summary-card">
+                    <div class="summary-icon">✓</div>
+                    <p>Total paid</p>
+                    <h2 id="totalPaid">RM 0.00</h2>
+                    <span>Payments completed</span>
+                </article>
 
-            <div class="calendar-days" id="calendarDays"></div>
+                <article class="summary-card">
+                    <div class="summary-icon">▦</div>
+                    <p>Due this month</p>
+                    <h2 id="totalThisMonth">RM 0.00</h2>
+                    <span>Monthly commitments</span>
+                </article>
 
-            <div class="calendar-legend">
-                <span><i class="legend-dot paid-dot"></i> Paid</span>
-                <span><i class="legend-dot pending-dot"></i> Upcoming</span>
-                <span><i class="legend-dot overdue-dot"></i> Overdue</span>
-                <span><i class="legend-dot selected-dot"></i> Selected</span>
-            </div>
+                <article class="summary-card">
+                    <div class="summary-icon">!</div>
+                    <p>Overdue</p>
+                    <h2 id="totalOverdue">RM 0.00</h2>
+                    <span>Unpaid past payments</span>
+                </article>
+            </section>
 
-        </section>
+            <section class="quick-summary-grid">
+                <article class="quick-card">
+                    <span class="quick-label">TODAY</span>
+                    <strong id="todayOutstanding">RM 0.00</strong>
+                    <small>Due today</small>
+                </article>
 
+                <article class="quick-card">
+                    <span class="quick-label">THIS WEEK</span>
+                    <strong id="weekOutstanding">RM 0.00</strong>
+                    <small>Due this week</small>
+                </article>
 
-        <!-- SELECTED DATE -->
-        <section class="panel selected-panel">
+                <article class="quick-card">
+                    <span class="quick-label">NEXT 7 DAYS</span>
+                    <strong id="upcomingOutstanding">RM 0.00</strong>
+                    <small>Upcoming payments</small>
+                </article>
+            </section>
 
-            <div class="panel-heading">
-                <div>
-                    <span class="eyebrow">DAILY DETAILS</span>
-                    <h2 id="selectedDateTitle">Select a date</h2>
-                </div>
+            <section class="content-grid">
 
-                <div class="date-icon">♡</div>
-            </div>
+                <section class="panel calendar-panel">
+                    <div class="panel-heading">
+                        <div>
+                            <p class="eyebrow">PAYMENT SCHEDULE</p>
+                            <h2>Our calendar</h2>
+                        </div>
 
-            <div class="selected-total">
-                <span>Outstanding on this date</span>
-                <strong id="selectedDateTotal">RM 0.00</strong>
-            </div>
+                        <div class="calendar-controls">
+                            <button id="previousMonth" class="icon-button"
+                                type="button" aria-label="Previous month">‹</button>
+                            <strong id="calendarMonth">Month Year</strong>
+                            <button id="nextMonth" class="icon-button"
+                                type="button" aria-label="Next month">›</button>
+                        </div>
+                    </div>
 
-            <div id="selectedDatePayments" class="payment-list">
-                <div class="empty-state">
-                    <span>☁️</span>
-                    <p>Select a date to see payments.</p>
-                </div>
-            </div>
+                    <div class="calendar-weekdays" aria-hidden="true">
+                        <span>Sun</span>
+                        <span>Mon</span>
+                        <span>Tue</span>
+                        <span>Wed</span>
+                        <span>Thu</span>
+                        <span>Fri</span>
+                        <span>Sat</span>
+                    </div>
 
-        </section>
+                    <div id="calendarDays" class="calendar-days"></div>
 
-    </main>
+                    <div class="calendar-legend">
+                        <span><i class="legend-dot due-dot"></i> Payment due</span>
+                        <span><i class="legend-dot paid-dot"></i> Paid</span>
+                        <span><i class="legend-dot overdue-dot"></i> Overdue</span>
+                    </div>
+                </section>
 
+                <section class="panel selected-day-panel">
+                    <div class="panel-heading">
+                        <div>
+                            <p class="eyebrow">DAILY OVERVIEW</p>
+                            <h2 id="selectedDateTitle">Selected date</h2>
+                        </div>
+                    </div>
 
-    <!-- MONTHLY BREAKDOWN -->
-    <section class="panel monthly-panel">
+                    <div class="selected-date-total">
+                        <span>Total scheduled</span>
+                        <strong id="selectedDateTotal">RM 0.00</strong>
+                    </div>
 
-        <div class="panel-heading">
-            <div>
-                <span class="eyebrow">MONTHLY FINANCIAL BREAKDOWN</span>
-                <h2 id="monthlyBreakdownTitle">Monthly Breakdown</h2>
-                <p class="section-description">See how much each person needs to pay.</p>
-            </div>
-        </div>
+                    <div id="selectedDatePayments" class="payment-list">
+                        <div class="empty-state">
+                            <span>♡</span>
+                            <p>Select a date to view payments.</p>
+                        </div>
+                    </div>
+                </section>
+            </section>
 
-        <div class="monthly-overview-grid">
-
-            <article class="monthly-overview-card">
-                <span>Scheduled This Month</span>
-                <strong id="monthlyScheduled">RM 0.00</strong>
-                <small>All scheduled instalments</small>
-            </article>
-
-            <article class="monthly-overview-card">
-                <span>Paid This Month</span>
-                <strong class="positive" id="monthlyPaid">RM 0.00</strong>
-                <small>Completed instalments</small>
-            </article>
-
-            <article class="monthly-overview-card">
-                <span>Remaining This Month</span>
-                <strong class="warning" id="monthlyRemaining">RM 0.00</strong>
-                <small>Still waiting for payment</small>
-            </article>
-
-        </div>
-
-        <div class="monthly-people-grid">
-
-            <article class="monthly-person-card capiq-monthly">
-                <div class="monthly-person-heading">
-                    <div class="monthly-avatar">C</div>
+            <section class="panel monthly-panel">
+                <div class="panel-heading">
                     <div>
-                        <strong>Capiq</strong>
-                        <small>Personal commitments</small>
+                        <p class="eyebrow">MONTHLY BREAKDOWN</p>
+                        <h2 id="monthlyBreakdownTitle">Monthly overview</h2>
                     </div>
                 </div>
 
-                <span class="monthly-label">Total scheduled</span>
-                <strong class="monthly-main-amount" id="capiqScheduled">RM 0.00</strong>
-
-                <div class="monthly-breakdown">
-                    <div>
-                        <span>Paid</span>
-                        <strong id="capiqPaid">RM 0.00</strong>
-                    </div>
-                    <div>
+                <div class="monthly-summary-grid">
+                    <article class="monthly-stat">
+                        <span>Total scheduled</span>
+                        <strong id="monthlyScheduled">RM 0.00</strong>
+                    </article>
+                    <article class="monthly-stat">
+                        <span>Total paid</span>
+                        <strong id="monthlyPaid">RM 0.00</strong>
+                    </article>
+                    <article class="monthly-stat">
                         <span>Remaining</span>
-                        <strong id="capiqRemaining">RM 0.00</strong>
-                    </div>
-                </div>
-            </article>
-
-
-            <article class="monthly-person-card eisya-monthly">
-                <div class="monthly-person-heading">
-                    <div class="monthly-avatar">E</div>
-                    <div>
-                        <strong>Eisya</strong>
-                        <small>Personal commitments</small>
-                    </div>
+                        <strong id="monthlyRemaining">RM 0.00</strong>
+                    </article>
                 </div>
 
-                <span class="monthly-label">Total scheduled</span>
-                <strong class="monthly-main-amount" id="eisyaScheduled">RM 0.00</strong>
+                <div class="people-breakdown">
+                    <article class="person-card capiq-card">
+                        <div class="person-heading">
+                            <span class="person-avatar">C</span>
+                            <strong>Capiq</strong>
+                        </div>
+                        <div class="person-numbers">
+                            <div><small>Scheduled</small><strong id="capiqScheduled">RM 0.00</strong></div>
+                            <div><small>Paid</small><strong id="capiqPaid">RM 0.00</strong></div>
+                            <div><small>Remaining</small><strong id="capiqRemaining">RM 0.00</strong></div>
+                        </div>
+                    </article>
 
-                <div class="monthly-breakdown">
+                    <article class="person-card eisya-card">
+                        <div class="person-heading">
+                            <span class="person-avatar">E</span>
+                            <strong>Eisya</strong>
+                        </div>
+                        <div class="person-numbers">
+                            <div><small>Scheduled</small><strong id="eisyaScheduled">RM 0.00</strong></div>
+                            <div><small>Paid</small><strong id="eisyaPaid">RM 0.00</strong></div>
+                            <div><small>Remaining</small><strong id="eisyaRemaining">RM 0.00</strong></div>
+                        </div>
+                    </article>
+
+                    <article class="person-card shared-card">
+                        <div class="person-heading">
+                            <span class="person-avatar">♡</span>
+                            <strong>Shared (Both)</strong>
+                        </div>
+                        <div class="person-numbers">
+                            <div><small>Scheduled</small><strong id="sharedScheduled">RM 0.00</strong></div>
+                            <div><small>Paid</small><strong id="sharedPaid">RM 0.00</strong></div>
+                            <div><small>Remaining</small><strong id="sharedRemaining">RM 0.00</strong></div>
+                        </div>
+                    </article>
+                </div>
+            </section>
+
+            <section class="panel debts-panel">
+                <div class="panel-heading debts-heading">
                     <div>
-                        <span>Paid</span>
-                        <strong id="eisyaPaid">RM 0.00</strong>
-                    </div>
-                    <div>
-                        <span>Remaining</span>
-                        <strong id="eisyaRemaining">RM 0.00</strong>
+                        <p class="eyebrow">ALL COMMITMENTS</p>
+                        <h2>Our debts</h2>
+                        <small id="debtCount">0 debts</small>
                     </div>
                 </div>
-            </article>
 
+                <div class="filter-row">
+                    <input id="searchDebt" type="search"
+                        placeholder="Search debts..." aria-label="Search debts">
 
-            <article class="monthly-person-card shared-monthly">
-                <div class="monthly-person-heading">
-                    <div class="monthly-avatar">♡</div>
-                    <div>
-                        <strong>Shared (Both)</strong>
-                        <small>Shared commitments</small>
-                    </div>
+                    <select id="personFilter" aria-label="Filter by person">
+                        <option value="all">Everyone</option>
+                        <option value="Baby">Eisya</option>
+                        <option value="Sayang">Capiq</option>
+                        <option value="Everyone">Shared (Both)</option>
+                    </select>
+
+                    <select id="statusFilter" aria-label="Filter by payment status">
+                        <option value="all">All statuses</option>
+                        <option value="unpaid">Unpaid</option>
+                        <option value="paid">Paid</option>
+                        <option value="overdue">Overdue</option>
+                    </select>
                 </div>
 
-                <span class="monthly-label">Total scheduled</span>
-                <strong class="monthly-main-amount" id="sharedScheduled">RM 0.00</strong>
-
-                <div class="monthly-breakdown">
-                    <div>
-                        <span>Paid</span>
-                        <strong id="sharedPaid">RM 0.00</strong>
-                    </div>
-                    <div>
-                        <span>Remaining</span>
-                        <strong id="sharedRemaining">RM 0.00</strong>
+                <div id="debtsContainer" class="debts-container">
+                    <div class="empty-state">
+                        <span>♡</span>
+                        <p>Your debts will appear here.</p>
                     </div>
                 </div>
-            </article>
+            </section>
 
-        </div>
+            <footer class="app-footer">
+                <span>Made with love</span>
+                <strong>Perhutangan ♡</strong>
+                <small>Your little shared debt tracker.</small>
+            </footer>
 
-    </section>
+        </main>
+    </div>
 
-
-    <!-- DEBT MANAGEMENT -->
-    <section class="panel debts-panel">
-
-        <div class="panel-heading">
-            <div>
-                <span class="eyebrow">YOUR COMMITMENTS</span>
-                <h2>All Debts</h2>
-                <p class="section-description">Manage your monthly instalments.</p>
-            </div>
-
-            <span class="debt-count" id="debtCount">0 debts</span>
-        </div>
-
-
-        <div class="filter-bar">
-
-            <div class="search-box">
-                <span>⌕</span>
-                <input
-                    type="search"
-                    id="searchDebt"
-                    placeholder="Search your debts..."
-                >
-            </div>
-
-            <select id="personFilter">
-                <option value="all">Everyone</option>
-                <option value="Capiq">Capiq</option>
-                <option value="Eisya">Eisya</option>
-                <option value="Shared (Both)">Shared (Both)</option>
-            </select>
-
-            <select id="statusFilter">
-                <option value="all">All Status</option>
-                <option value="active">Active</option>
-                <option value="overdue">Overdue</option>
-                <option value="completed">Completed</option>
-            </select>
-
-        </div>
-
-
-        <div id="debtsContainer" class="debts-container">
-
-            <div class="empty-state">
-                <span>☁️</span>
-                <p>Loading your debts...</p>
-            </div>
-
-        </div>
-
-    </section>
-
-
-    <!-- ADD DEBT MODAL -->
-    <div class="modal-overlay" id="debtModal">
-
-        <div class="modal-card">
+    <!-- Add debt modal -->
+    <div id="debtModal" class="modal-overlay" hidden>
+        <section class="modal-card" role="dialog"
+            aria-modal="true" aria-labelledby="modalTitle">
 
             <div class="modal-heading">
                 <div>
-                    <span class="eyebrow">NEW COMMITMENT</span>
-                    <h2>Add a Debt</h2>
+                    <p class="eyebrow">NEW COMMITMENT</p>
+                    <h2 id="modalTitle">Add a debt ♡</h2>
                 </div>
-
-                <button class="icon-button" id="closeDebtModal">×</button>
+                <button id="closeDebtModal" class="icon-button close-button"
+                    type="button" aria-label="Close">×</button>
             </div>
 
             <form id="debtForm">
-
                 <label for="debtPerson">Who is responsible?</label>
                 <select id="debtPerson" required>
-                    <option value="Sayang">Capiq</option>
                     <option value="Baby">Eisya</option>
+                    <option value="Sayang">Capiq</option>
                     <option value="Everyone">Shared (Both)</option>
                 </select>
 
                 <label for="debtName">Debt name</label>
-                <input
-                    type="text"
-                    id="debtName"
-                    placeholder="e.g. Atome, SPayLater"
-                    maxlength="100"
-                    required
-                >
+                <input id="debtName" type="text"
+                    placeholder="e.g. Atome, SPayLater" required maxlength="100">
 
                 <label for="debtAmount">Monthly instalment (RM)</label>
-                <input
-                    type="number"
-                    id="debtAmount"
-                    placeholder="0.00"
-                    min="0.01"
-                    step="0.01"
-                    required
-                >
+                <input id="debtAmount" type="number"
+                    min="0.01" step="0.01" placeholder="0.00" required>
 
                 <label for="debtMonths">Number of months</label>
-                <input
-                    type="number"
-                    id="debtMonths"
-                    placeholder="e.g. 6"
-                    min="1"
-                    max="120"
-                    step="1"
-                    required
-                >
+                <input id="debtMonths" type="number"
+                    min="1" max="600" step="1" placeholder="e.g. 6" required>
 
                 <label for="debtFirstDate">First payment date</label>
-                <input
-                    type="date"
-                    id="debtFirstDate"
-                    required
-                >
+                <input id="debtFirstDate" type="date" required>
 
-                <label for="debtNote">Additional note (optional)</label>
-                <textarea
-                    id="debtNote"
-                    rows="3"
-                    placeholder="Write a note..."
-                ></textarea>
+                <label for="debtNote">Note (optional)</label>
+                <textarea id="debtNote" rows="3"
+                    placeholder="Add a note..."></textarea>
 
-                <div class="form-preview">
-                    <span>Estimated total commitment</span>
+                <div class="estimate-box">
+                    <span>Estimated total debt</span>
                     <strong id="estimatedTotal">RM 0.00</strong>
                 </div>
 
-                <button type="submit" class="primary-button submit-button" id="saveDebtButton">
-                    Save Debt
-                </button>
-
+                <button id="saveDebtButton" class="primary-button save-button"
+                    type="submit">Save debt</button>
             </form>
-
-        </div>
-
+        </section>
     </div>
 
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-    <!-- TOAST -->
-    <div id="toast" class="toast"></div>
-
-
-    <!-- FOOTER -->
-    <footer class="footer">
-        <p>Made with ♡ for Capiq & Eisya</p>
-        <span>PERHUTANGAN ♡</span>
-    </footer>
-
-</div>
-
-
-<script src="app.js"></script>
-
+    <script>
+        // Register the lightweight app service worker.
+        if ("serviceWorker" in navigator) {
+            window.addEventListener("load", () => {
+                navigator.serviceWorker.register("./service-worker.js")
+                    .catch(error => console.warn("App caching unavailable:", error));
+            });
+        }
+    </script>
 </body>
 </html>

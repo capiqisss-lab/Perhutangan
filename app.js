@@ -1,4 +1,3 @@
-
 "use strict";
 
 /* =========================================
@@ -343,6 +342,84 @@ function renderSummary() {
     $("upcomingOutstanding").textContent = money(sumPayments(upcoming));
 }
 
+/* DEBT TYPE OVERVIEW */
+
+function renderDebtTypeSummary() {
+
+    const schedule = allSchedule();
+
+    // Exclude instalments already marked as paid.
+    const unpaid = schedule.filter(item => !item.paid);
+
+    // Count instalments due in the selected calendar month.
+    const thisMonth = unpaid.filter(item =>
+        sameMonth(item.due_date, currentMonth)
+    );
+
+    // Overall counts.
+    $("typeMonthCount").textContent = thisMonth.length;
+    $("typeAllCount").textContent = unpaid.length;
+
+    // Prepare every debt type, including types with zero debts.
+    const breakdown = {};
+
+    DEBT_TYPES.forEach(type => {
+        breakdown[type] = {
+            monthCount: 0,
+            allCount: 0,
+            monthAmount: 0,
+            allAmount: 0
+        };
+    });
+
+    // Count all unpaid instalments across every month.
+    unpaid.forEach(item => {
+
+        const type = getDebtType(item.debt);
+
+        breakdown[type].allCount++;
+        breakdown[type].allAmount += Number(item.amount) || 0;
+
+    });
+
+    // Count unpaid instalments due in the selected month.
+    thisMonth.forEach(item => {
+
+        const type = getDebtType(item.debt);
+
+        breakdown[type].monthCount++;
+        breakdown[type].monthAmount += Number(item.amount) || 0;
+
+    });
+
+    // Display all debt types.
+    $("debtTypeBreakdown").innerHTML = DEBT_TYPES.map(type => {
+
+        const data = breakdown[type];
+
+        return `
+            <article class="debt-type-row">
+
+                <div class="debt-type-row-name">
+                    <strong>${escapeHTML(type)}</strong>
+                </div>
+
+                <div class="debt-type-column">
+                    <strong>${data.monthCount}</strong>
+                    <small>${money(data.monthAmount)}</small>
+                </div>
+
+                <div class="debt-type-column">
+                    <strong>${data.allCount}</strong>
+                    <small>${money(data.allAmount)}</small>
+                </div>
+
+            </article>
+        `;
+
+    }).join("");
+}
+
 /* CALENDAR */
 
 function renderCalendar() {
@@ -385,10 +462,12 @@ function renderCalendar() {
             day = previousMonthDays - startingDay + i + 1;
             dateString = localDate(new Date(year, month - 1, day));
             outside = true;
+
         } else if (i >= startingDay + daysInMonth) {
             day = i - startingDay - daysInMonth + 1;
             dateString = localDate(new Date(year, month + 1, day));
             outside = true;
+
         } else {
             day = i - startingDay + 1;
             dateString = localDate(new Date(year, month, day));
@@ -407,6 +486,7 @@ function renderCalendar() {
 
         const markers = dayPayments.slice(0, 4).map(payment => {
             const status = paymentStatus(payment);
+
             const markerClass = status === "paid"
                 ? "paid"
                 : status === "overdue"
@@ -476,8 +556,10 @@ function renderSelectedDate() {
 
         return `
             <div class="payment-item">
+
                 <div class="payment-info">
                     <strong>${escapeHTML(item.debt.name)}</strong>
+
                     <small>
                         ${escapeHTML(getDebtType(item.debt))}
                         · ${escapeHTML(personName(item.debt.person))}
@@ -486,10 +568,12 @@ function renderSelectedDate() {
 
                 <div class="payment-right">
                     <strong>${money(item.amount)}</strong>
+
                     <span class="status-pill status-${status}">
                         ${status.toUpperCase()}
                     </span>
                 </div>
+
             </div>
         `;
     }).join("");
@@ -687,6 +771,7 @@ function renderDebts() {
                 <div class="debt-card-top">
                     <div>
                         <h3>${escapeHTML(debt.name)}</h3>
+
                         <span class="debt-person">
                             ${escapeHTML(personName(debt.person))}
                             · ${schedule.length} months
@@ -710,18 +795,22 @@ function renderDebts() {
                 <div class="debt-amount-label">Remaining outstanding</div>
 
                 <div class="debt-details">
+
                     <div>
                         <span>Monthly payment</span>
                         <strong>${money(debt.amount)}</strong>
                     </div>
+
                     <div>
                         <span>Total paid</span>
                         <strong>${money(totalPaid)}</strong>
                     </div>
+
                     <div>
                         <span>First due date</span>
                         <strong>${formatDate(debt.first_due_date)}</strong>
                     </div>
+
                     <div>
                         <span>Next payment</span>
                         <strong>
@@ -730,6 +819,7 @@ function renderDebts() {
                                 : "Completed"}
                         </strong>
                     </div>
+
                 </div>
 
                 <div class="debt-progress">
@@ -773,11 +863,14 @@ function renderDebts() {
             try {
                 if (action === "pay") {
                     await markPaymentPaid(debtId, button.dataset.date);
+
                 } else if (action === "undo") {
                     await undoLastPayment(debtId);
+
                 } else if (action === "delete") {
                     await deleteDebt(debtId);
                 }
+
             } finally {
                 button.disabled = false;
             }
@@ -813,6 +906,7 @@ async function markPaymentPaid(debtId, dueDate) {
                 .eq("id", existing.id)
                 .select()
                 .single();
+
         } else {
             result = await db.from("debt_payments")
                 .insert({
@@ -1005,6 +1099,7 @@ async function saveDebt(event) {
             showToast(
                 "Debt saved, but the payment schedule could not be saved. Check Supabase permissions."
             );
+
         } else {
             showToast("New debt and payment schedule saved! ♡");
         }
@@ -1039,6 +1134,7 @@ function changeMonth(direction) {
 
 function renderAll() {
     renderSummary();
+    renderDebtTypeSummary();
     renderCalendar();
     renderSelectedDate();
     renderMonthlyTotals();

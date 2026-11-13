@@ -1,4 +1,3 @@
-
 :root {
     --blue-50: #f5faff;
     --blue-100: #eaf5ff;
@@ -344,6 +343,137 @@ p {
     margin-bottom: 0;
     font-size: 19px;
     letter-spacing: -0.45px;
+}
+
+/* DEBT TYPE OVERVIEW */
+
+.debt-type-overview {
+    margin-bottom: 16px;
+}
+
+.debt-type-overview .panel-heading small {
+    display: block;
+    margin-top: 6px;
+    color: var(--muted);
+    font-size: 10px;
+}
+
+.type-total-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 22px;
+}
+
+.type-total-card {
+    padding: 18px;
+    border: 1px solid var(--blue-150);
+    border-radius: 14px;
+    background: var(--blue-50);
+}
+
+.type-total-card span {
+    display: block;
+    margin-bottom: 9px;
+    color: var(--blue-600);
+    font-size: 10px;
+    font-weight: 850;
+    letter-spacing: 1px;
+}
+
+.type-total-card strong {
+    display: block;
+    margin-bottom: 5px;
+    color: var(--ink);
+    font-size: 34px;
+    font-weight: 850;
+    font-variant-numeric: tabular-nums;
+}
+
+.type-total-card small {
+    color: var(--muted);
+    font-size: 11px;
+}
+
+.type-breakdown-heading {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin-bottom: 12px;
+}
+
+.type-breakdown-heading strong {
+    font-size: 13px;
+}
+
+.type-breakdown-heading small {
+    color: var(--muted);
+    font-size: 10px;
+}
+
+.debt-type-table {
+    width: 100%;
+}
+
+.debt-type-table-header,
+.debt-type-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1.5fr) minmax(85px, 1fr) minmax(85px, 1fr);
+    align-items: center;
+    gap: 10px;
+}
+
+.debt-type-table-header {
+    padding: 11px 12px;
+    border-radius: 10px 10px 0 0;
+    color: var(--muted);
+    background: var(--blue-50);
+    font-size: 10px;
+    font-weight: 800;
+}
+
+.debt-type-table-header span:not(:first-child) {
+    text-align: center;
+}
+
+.debt-type-row {
+    min-height: 65px;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+}
+
+.debt-type-row:last-child {
+    border-bottom: 0;
+}
+
+.debt-type-row-name {
+    min-width: 0;
+}
+
+.debt-type-row-name strong {
+    display: block;
+    overflow-wrap: anywhere;
+    font-size: 12px;
+}
+
+.debt-type-column {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.debt-type-column strong {
+    color: var(--blue-700);
+    font-size: 17px;
+    font-weight: 850;
+    font-variant-numeric: tabular-nums;
+}
+
+.debt-type-column small {
+    color: var(--muted);
+    font-size: 10px;
+    font-variant-numeric: tabular-nums;
 }
 
 /* CALENDAR */
@@ -1077,6 +1207,7 @@ p {
 /* PHONE */
 
 @media (max-width: 759px) {
+
     .topbar {
         min-height: 65px;
         padding: 10px 15px;
@@ -1161,6 +1292,41 @@ p {
         font-size: 11px;
     }
 
+    .type-total-card {
+        padding: 14px;
+    }
+
+    .type-total-card strong {
+        font-size: 29px;
+    }
+
+    .debt-type-table-header,
+    .debt-type-row {
+        grid-template-columns: minmax(0, 1.25fr) minmax(72px, 1fr) minmax(72px, 1fr);
+        gap: 5px;
+    }
+
+    .debt-type-table-header {
+        padding: 10px 7px;
+        font-size: 9px;
+    }
+
+    .debt-type-row {
+        padding: 10px 7px;
+    }
+
+    .debt-type-row-name strong {
+        font-size: 11px;
+    }
+
+    .debt-type-column strong {
+        font-size: 15px;
+    }
+
+    .debt-type-column small {
+        font-size: 9px;
+    }
+
     .monthly-summary-grid {
         gap: 7px;
     }
@@ -1235,6 +1401,7 @@ p {
 }
 
 @media (max-width: 370px) {
+
     .connection-status {
         max-width: 105px;
         font-size: 9px;
@@ -1261,6 +1428,11 @@ p {
     .debt-actions button {
         font-size: 9px;
         padding: 7px 8px;
+    }
+
+    .debt-type-table-header,
+    .debt-type-row {
+        grid-template-columns: minmax(0, 1.1fr) minmax(65px, 1fr) minmax(65px, 1fr);
     }
 }
 

@@ -339,6 +339,84 @@ p {
 
 
 /* ==========================================
+   SELECTED MONTH PERSON BREAKDOWN
+========================================== */
+
+.monthly-breakdown {
+    margin: 22px 0;
+    padding: 18px;
+    background: #fafbff;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+}
+
+.monthly-breakdown-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+.monthly-breakdown h3 {
+    font-size: 15px;
+    margin: 0 0 5px;
+}
+
+.monthly-breakdown-note {
+    color: var(--muted);
+    font-size: 10px;
+    margin: 0;
+}
+
+.monthly-person-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.monthly-person-card {
+    min-width: 0;
+    padding: 14px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: #fff;
+}
+
+.monthly-person-card.baby {
+    background: var(--pink-soft);
+    border-color: #f8d6e4;
+}
+
+.monthly-person-card.sayang {
+    background: var(--blue-soft);
+    border-color: #d8e0ff;
+}
+
+.monthly-person-card.everyone {
+    background: #f2edff;
+    border-color: #ded2ff;
+}
+
+.monthly-person-card strong {
+    display: block;
+    margin: 10px 0 4px;
+    font-family: 'Manrope', sans-serif;
+    font-size: clamp(16px, 2vw, 21px);
+    overflow-wrap: anywhere;
+}
+
+.monthly-person-card small {
+    color: var(--muted);
+    font-size: 10px;
+}
+
+.overall-person-eyebrow {
+    margin: 22px 0 -8px;
+}
+
+
+/* ==========================================
    UPCOMING REMINDERS
 ========================================== */
 
@@ -971,6 +1049,15 @@ footer {
     .person-summary-grid {
         grid-template-columns: 1fr;
         gap: 9px;
+    }
+
+    .monthly-person-grid {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+
+    .monthly-person-card {
+        padding: 12px;
     }
 
     .person-summary {

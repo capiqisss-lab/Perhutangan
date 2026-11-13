@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -55,7 +54,9 @@
             </button>
         </section>
 
+        <!-- MAIN SUMMARY -->
         <section class="summary-grid" aria-label="Debt summaries">
+
             <article class="summary-card summary-main">
                 <div class="summary-icon">♡</div>
                 <p>Total outstanding</p>
@@ -83,9 +84,12 @@
                 <h2 id="totalOverdue">RM 0.00</h2>
                 <span>Unpaid past payments</span>
             </article>
+
         </section>
 
+        <!-- QUICK SUMMARY -->
         <section class="quick-summary-grid">
+
             <article class="quick-card">
                 <span class="quick-label">TODAY</span>
                 <strong id="todayOutstanding">RM 0.00</strong>
@@ -103,11 +107,65 @@
                 <strong id="upcomingOutstanding">RM 0.00</strong>
                 <small>Upcoming payments</small>
             </article>
+
         </section>
 
+        <!-- DEBT TYPE OVERVIEW -->
+        <section class="panel debt-type-overview">
+
+            <div class="panel-heading">
+                <div>
+                    <p class="eyebrow">DEBT TYPE OVERVIEW</p>
+                    <h2>Where our debts come from ♡</h2>
+                    <small>Unpaid instalments grouped by debt type.</small>
+                </div>
+            </div>
+
+            <div class="type-total-grid">
+
+                <article class="type-total-card">
+                    <span>THIS MONTH</span>
+                    <strong id="typeMonthCount">0</strong>
+                    <small>Unpaid instalments due this month</small>
+                </article>
+
+                <article class="type-total-card">
+                    <span>ALL MONTHS</span>
+                    <strong id="typeAllCount">0</strong>
+                    <small>All remaining unpaid instalments</small>
+                </article>
+
+            </div>
+
+            <div class="type-breakdown-heading">
+                <strong>Breakdown by debt type</strong>
+                <small>Paid instalments are excluded from these counts.</small>
+            </div>
+
+            <div class="debt-type-table">
+
+                <div class="debt-type-table-header">
+                    <span>Debt type</span>
+                    <span>This month</span>
+                    <span>All months</span>
+                </div>
+
+                <div id="debtTypeBreakdown" class="debt-type-breakdown">
+                    <div class="empty-state">
+                        <span>♡</span>
+                        <p>Your debt breakdown will appear here.</p>
+                    </div>
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- CALENDAR AND DAILY PAYMENTS -->
         <section class="content-grid">
 
             <section class="panel calendar-panel">
+
                 <div class="panel-heading">
                     <div>
                         <p class="eyebrow">PAYMENT SCHEDULE</p>
@@ -117,15 +175,21 @@
                     <div class="calendar-controls">
                         <button id="previousMonth" class="icon-button"
                             type="button" aria-label="Previous month">‹</button>
+
                         <strong id="calendarMonth">Month Year</strong>
+
                         <button id="nextMonth" class="icon-button"
                             type="button" aria-label="Next month">›</button>
                     </div>
                 </div>
 
                 <div class="calendar-weekdays" aria-hidden="true">
-                    <span>Sun</span><span>Mon</span><span>Tue</span>
-                    <span>Wed</span><span>Thu</span><span>Fri</span>
+                    <span>Sun</span>
+                    <span>Mon</span>
+                    <span>Tue</span>
+                    <span>Wed</span>
+                    <span>Thu</span>
+                    <span>Fri</span>
                     <span>Sat</span>
                 </div>
 
@@ -136,9 +200,11 @@
                     <span><i class="legend-dot paid-dot"></i> Paid</span>
                     <span><i class="legend-dot overdue-dot"></i> Overdue</span>
                 </div>
+
             </section>
 
             <section class="panel selected-day-panel">
+
                 <div class="panel-heading">
                     <div>
                         <p class="eyebrow">DAILY OVERVIEW</p>
@@ -157,10 +223,14 @@
                         <p>Select a date to view payments.</p>
                     </div>
                 </div>
+
             </section>
+
         </section>
 
+        <!-- MONTHLY BREAKDOWN -->
         <section class="panel monthly-panel">
+
             <div class="panel-heading">
                 <div>
                     <p class="eyebrow">MONTHLY BREAKDOWN</p>
@@ -169,26 +239,32 @@
             </div>
 
             <div class="monthly-summary-grid">
+
                 <article class="monthly-stat">
                     <span>Total scheduled</span>
                     <strong id="monthlyScheduled">RM 0.00</strong>
                 </article>
+
                 <article class="monthly-stat">
                     <span>Total paid</span>
                     <strong id="monthlyPaid">RM 0.00</strong>
                 </article>
+
                 <article class="monthly-stat">
                     <span>Remaining</span>
                     <strong id="monthlyRemaining">RM 0.00</strong>
                 </article>
+
             </div>
 
             <div class="people-breakdown">
+
                 <article class="person-card capiq-card">
                     <div class="person-heading">
                         <span class="person-avatar">C</span>
                         <strong>Capiq</strong>
                     </div>
+
                     <div class="person-numbers">
                         <div><small>Scheduled</small><strong id="capiqScheduled">RM 0.00</strong></div>
                         <div><small>Paid</small><strong id="capiqPaid">RM 0.00</strong></div>
@@ -201,6 +277,7 @@
                         <span class="person-avatar">E</span>
                         <strong>Eisya</strong>
                     </div>
+
                     <div class="person-numbers">
                         <div><small>Scheduled</small><strong id="eisyaScheduled">RM 0.00</strong></div>
                         <div><small>Paid</small><strong id="eisyaPaid">RM 0.00</strong></div>
@@ -213,16 +290,21 @@
                         <span class="person-avatar">♡</span>
                         <strong>Shared (Both)</strong>
                     </div>
+
                     <div class="person-numbers">
                         <div><small>Scheduled</small><strong id="sharedScheduled">RM 0.00</strong></div>
                         <div><small>Paid</small><strong id="sharedPaid">RM 0.00</strong></div>
                         <div><small>Remaining</small><strong id="sharedRemaining">RM 0.00</strong></div>
                     </div>
                 </article>
+
             </div>
+
         </section>
 
+        <!-- ALL DEBTS -->
         <section class="panel debts-panel">
+
             <div class="panel-heading debts-heading">
                 <div>
                     <p class="eyebrow">ALL COMMITMENTS</p>
@@ -232,6 +314,7 @@
             </div>
 
             <div class="filter-row">
+
                 <input id="searchDebt" type="search"
                     placeholder="Search debts..." aria-label="Search debts">
 
@@ -261,6 +344,7 @@
                     <option value="paid">Paid</option>
                     <option value="overdue">Overdue</option>
                 </select>
+
             </div>
 
             <div id="debtsContainer" class="debts-container">
@@ -269,6 +353,7 @@
                     <p>Your debts will appear here.</p>
                 </div>
             </div>
+
         </section>
 
         <footer class="app-footer">
@@ -280,8 +365,9 @@
     </main>
 </div>
 
-<!-- Add debt modal -->
+<!-- ADD DEBT MODAL -->
 <div id="debtModal" class="modal-overlay" hidden>
+
     <section class="modal-card" role="dialog"
         aria-modal="true" aria-labelledby="modalTitle">
 
@@ -290,11 +376,13 @@
                 <p class="eyebrow">NEW COMMITMENT</p>
                 <h2 id="modalTitle">Add a debt ♡</h2>
             </div>
+
             <button id="closeDebtModal" class="icon-button close-button"
                 type="button" aria-label="Close">×</button>
         </div>
 
         <form id="debtForm">
+
             <label for="debtPerson">Who is responsible?</label>
             <select id="debtPerson" required>
                 <option value="Baby">Eisya</option>
@@ -317,7 +405,8 @@
 
             <label for="debtName">Debt name</label>
             <input id="debtName" type="text"
-                placeholder="e.g. Atome purchase, phone..." required maxlength="100">
+                placeholder="e.g. Atome purchase, phone..."
+                required maxlength="100">
 
             <label for="debtAmount">Monthly instalment (RM)</label>
             <input id="debtAmount" type="number"
@@ -341,7 +430,9 @@
 
             <button id="saveDebtButton" class="primary-button save-button"
                 type="submit">Save debt</button>
+
         </form>
+
     </section>
 </div>
 

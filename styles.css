@@ -65,6 +65,8 @@ textarea:focus-visible {
     min-height: 100vh;
 }
 
+/* HEADER */
+
 .topbar {
     min-height: 76px;
     padding: 12px max(22px, env(safe-area-inset-left));
@@ -127,6 +129,16 @@ textarea:focus-visible {
     border-radius: 50%;
     background: var(--orange);
 }
+
+.status-dot.connected {
+    background: var(--green);
+}
+
+.status-dot.error {
+    background: var(--red);
+}
+
+/* MAIN LAYOUT */
 
 .main-content {
     width: min(1180px, calc(100% - 40px));
@@ -203,6 +215,8 @@ p {
     cursor: not-allowed;
 }
 
+/* SUMMARY CARDS */
+
 .summary-grid {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -264,6 +278,8 @@ p {
     font-size: 10px;
 }
 
+/* QUICK SUMMARY */
+
 .quick-summary-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -295,6 +311,8 @@ p {
     color: var(--muted);
     font-size: 10px;
 }
+
+/* PANELS */
 
 .content-grid {
     display: grid;
@@ -328,6 +346,8 @@ p {
     letter-spacing: -0.45px;
 }
 
+/* CALENDAR */
+
 .calendar-controls {
     display: flex;
     align-items: center;
@@ -351,6 +371,10 @@ p {
     background: var(--blue-50);
     font-size: 21px;
     cursor: pointer;
+}
+
+.icon-button:hover {
+    background: var(--blue-100);
 }
 
 .calendar-weekdays,
@@ -408,7 +432,11 @@ p {
     background: var(--blue-600);
 }
 
-.calendar-day .day-markers {
+.calendar-day-number {
+    line-height: 1;
+}
+
+.day-markers {
     min-height: 5px;
     display: flex;
     align-items: center;
@@ -468,6 +496,8 @@ p {
     background: var(--red);
 }
 
+/* SELECTED DATE */
+
 .selected-date-total {
     padding: 13px 14px;
     display: flex;
@@ -505,6 +535,10 @@ p {
     border-bottom: 0;
 }
 
+.payment-info {
+    min-width: 0;
+}
+
 .payment-item strong {
     display: block;
     margin-bottom: 4px;
@@ -516,11 +550,45 @@ p {
     font-size: 10px;
 }
 
-.payment-item .payment-amount {
-    white-space: nowrap;
-    font-size: 12px;
-    font-weight: 800;
+.payment-right {
+    flex: 0 0 auto;
+    text-align: right;
 }
+
+.payment-right > strong {
+    white-space: nowrap;
+}
+
+/* STATUS LABELS */
+
+.status-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 5px 8px;
+    border-radius: 20px;
+    font-size: 9px;
+    font-weight: 850;
+    letter-spacing: 0.35px;
+    white-space: nowrap;
+}
+
+.status-upcoming {
+    color: var(--blue-700);
+    background: var(--blue-100);
+}
+
+.status-paid {
+    color: #23815f;
+    background: #e6f7f0;
+}
+
+.status-overdue {
+    color: #c44f5b;
+    background: #fff0f1;
+}
+
+/* MONTHLY BREAKDOWN */
 
 .monthly-summary-grid {
     display: grid;
@@ -612,6 +680,8 @@ p {
     font-variant-numeric: tabular-nums;
 }
 
+/* DEBT FILTERS */
+
 .debts-heading {
     margin-bottom: 14px;
 }
@@ -627,7 +697,7 @@ p {
 
 .filter-row {
     display: grid;
-    grid-template-columns: minmax(150px, 1fr) 170px 160px;
+    grid-template-columns: minmax(150px, 1fr) 150px 180px 145px;
     gap: 9px;
     margin-bottom: 16px;
 }
@@ -654,6 +724,8 @@ p {
     color: #a0afbd;
 }
 
+/* DEBT CARDS */
+
 .debts-container {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -666,6 +738,19 @@ p {
     border: 1px solid var(--border);
     border-radius: 14px;
     background: #fff;
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.debt-card:hover {
+    box-shadow: 0 8px 24px rgba(73, 127, 174, 0.10);
+    transform: translateY(-2px);
+}
+
+.debt-card-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
 }
 
 .debt-card h3 {
@@ -674,28 +759,153 @@ p {
     font-size: 14px;
 }
 
-.debt-card p {
-    margin-bottom: 8px;
+.debt-person {
     color: var(--muted);
-    font-size: 11px;
+    font-size: 10px;
 }
 
-.debt-card strong {
-    font-size: 17px;
+.debt-type-badge {
+    width: fit-content;
+    max-width: 100%;
+    margin-top: 12px;
+    padding: 6px 10px;
+    border: 1px solid var(--blue-150);
+    border-radius: 20px;
+    color: var(--blue-700);
+    background: var(--blue-50);
+    font-size: 10px;
+    font-weight: 750;
+}
+
+.debt-amount {
+    margin-top: 15px;
+    overflow-wrap: anywhere;
+    color: var(--ink);
+    font-size: 24px;
+    font-weight: 850;
+    letter-spacing: -0.7px;
     font-variant-numeric: tabular-nums;
 }
 
-.debt-card button {
+.debt-amount-label {
+    margin-top: 2px;
+    color: var(--muted);
+    font-size: 10px;
+}
+
+.debt-details {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 17px;
+    padding: 13px 0;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+}
+
+.debt-details > div {
+    min-width: 0;
+}
+
+.debt-details span {
+    display: block;
+    margin-bottom: 5px;
+    color: var(--muted);
+    font-size: 10px;
+}
+
+.debt-details strong {
+    display: block;
+    overflow-wrap: anywhere;
+    font-size: 12px;
+}
+
+.debt-progress {
+    height: 7px;
+    margin-top: 16px;
+    overflow: hidden;
+    border-radius: 20px;
+    background: var(--blue-100);
+}
+
+.debt-progress-fill {
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, var(--blue-500), var(--blue-700));
+    transition: width 0.3s ease;
+}
+
+.debt-progress-label {
+    margin-top: 7px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    color: var(--muted);
+    font-size: 10px;
+}
+
+.debt-progress-label strong {
+    color: var(--blue-700);
+}
+
+.debt-note {
+    margin-top: 13px;
+    padding: 10px;
+    border-radius: 10px;
+    color: var(--muted);
+    background: var(--blue-50);
+    font-size: 11px;
+    overflow-wrap: anywhere;
+}
+
+.debt-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin-top: 15px;
+}
+
+.debt-actions button {
     min-height: 35px;
     padding: 7px 10px;
     border: 1px solid var(--border);
     border-radius: 9px;
     color: var(--blue-700);
     background: var(--blue-50);
-    font-size: 11px;
-    font-weight: 700;
+    font-size: 10px;
+    font-weight: 750;
     cursor: pointer;
 }
+
+.debt-actions button:hover {
+    background: var(--blue-100);
+}
+
+.debt-actions button:disabled {
+    opacity: 0.5;
+    cursor: wait;
+}
+
+.debt-actions .pay-button {
+    color: #23815f;
+    background: #eaf8f2;
+    border-color: #d8f0e5;
+}
+
+.debt-actions .undo-button {
+    color: #8b6a34;
+    background: #fff8e9;
+    border-color: #f4e8c9;
+}
+
+.debt-actions .delete-button {
+    color: #c44f5b;
+    background: #fff1f2;
+    border-color: #f7dfe1;
+}
+
+/* EMPTY STATE */
 
 .empty-state {
     padding: 28px 12px;
@@ -715,6 +925,8 @@ p {
     font-size: 12px;
 }
 
+/* FOOTER */
+
 .app-footer {
     padding: 25px 10px 10px;
     display: flex;
@@ -731,7 +943,7 @@ p {
     font-size: 13px;
 }
 
-/* Modal */
+/* MODAL */
 
 .modal-overlay {
     position: fixed;
@@ -820,7 +1032,7 @@ p {
     margin-top: 5px;
 }
 
-/* Toast */
+/* TOAST */
 
 .toast {
     position: fixed;
@@ -846,23 +1058,23 @@ p {
     transform: translateY(0);
 }
 
-/* Tablet */
+/* TABLET */
 
 @media (min-width: 760px) and (max-width: 1050px) {
     .main-content {
-        width: min(100% - 32px, 900px);
-    }
-
-    .content-grid {
-        grid-template-columns: minmax(0, 1fr) minmax(260px, 0.85fr);
+        width: min(calc(100% - 32px), 900px);
     }
 
     .summary-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
+
+    .filter-row {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
 }
 
-/* Phone */
+/* PHONE */
 
 @media (max-width: 759px) {
     .topbar {
@@ -997,6 +1209,10 @@ p {
         grid-column: 1 / -1;
     }
 
+    .filter-row select {
+        font-size: 11px;
+    }
+
     .debts-container {
         grid-template-columns: 1fr;
     }
@@ -1041,9 +1257,14 @@ p {
     .calendar-day {
         min-height: 38px;
     }
+
+    .debt-actions button {
+        font-size: 9px;
+        padding: 7px 8px;
+    }
 }
 
-/* Accessibility and reduced motion */
+/* ACCESSIBILITY */
 
 @media (prefers-reduced-motion: reduce) {
     *,

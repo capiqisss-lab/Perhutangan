@@ -1,4 +1,3 @@
-
 "use strict";
 
 // ==========================================
@@ -12,7 +11,7 @@
 // ==========================================
 
 const SUPABASE_URL = "https://ixcvfcismkqwjpubbbpm.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_fitSTYwCaLGS9lQXonwQJw_liwfZLi3";
+const SUPABASE_ANON_KEY = "sb_publishable_fitSTyWCaLGS9lQXonwQJw_liwfZLi3";
 
 if (!window.supabase) {
     throw new Error("Supabase library did not load. Check your internet connection.");
@@ -146,21 +145,26 @@ function categoryName(category) {
 // PERSON HELPERS
 // ==========================================
 
+// Old database values (Baby and Sayang) are still supported.
+// They will appear in the website as Eisya and Capiq.
+
 function normalisePerson(person) {
     const value = String(person || "").trim().toLowerCase();
 
-    if (value === "baby") return "Baby";
-    if (value === "sayang") return "Sayang";
+    if (value === "baby" || value === "eisya") return "Eisya";
+    if (value === "sayang" || value === "capiq") return "Capiq";
 
     return "Everyone";
 }
 
 
-function personClass(person) {
-    const value = normalisePerson(person).toLowerCase();
+// Keep the existing CSS colour classes to avoid breaking the design.
 
-    if (value === "baby") return "baby";
-    if (value === "sayang") return "sayang";
+function personClass(person) {
+    const value = normalisePerson(person);
+
+    if (value === "Eisya") return "baby";
+    if (value === "Capiq") return "sayang";
 
     return "everyone";
 }
@@ -404,6 +408,7 @@ function render() {
     // ======================================
 
     renderPersonSummaries(events);
+    renderMonthlyPersonBreakdown(monthEvents);
     renderCalendar(events);
     renderUpcomingReminders(upcoming);
     renderSelectedDate(events);
@@ -412,15 +417,19 @@ function render() {
 
 
 // ==========================================
-// BABY, SAYANG AND EVERYONE TOTALS
+// OVERALL PERSON TOTALS (ALL MONTHS)
 // ==========================================
 
 function renderPersonSummaries(events) {
+    const people = [
+        { name: "Eisya", prefix: "eisya" },
+        { name: "Capiq", prefix: "capiq" },
+        { name: "Everyone", prefix: "everyone" }
+    ];
 
-    ["Baby", "Sayang", "Everyone"].forEach(person => {
-
+    people.forEach(({ name, prefix }) => {
         const personEvents = events.filter(event =>
-            normalisePerson(event.debt.person) === person
+            normalisePerson(event.debt.person) === name
         );
 
         const remaining = getRemainingEvents(personEvents);
@@ -430,10 +439,43 @@ function renderPersonSummaries(events) {
             0
         );
 
-        const prefix = person.toLowerCase();
+        $(`${prefix}Outstanding`).textContent = money(total);
 
-        $(`${prefix}Outstanding`).textContent =
-            money(total);
+        $(`${prefix}Installments`).textContent =
+            `${remaining.length} remaining instalments`;
+    });
+}
+
+
+// ==========================================
+// SELECTED MONTH PERSON BREAKDOWN
+// ==========================================
+
+function renderMonthlyPersonBreakdown(monthEvents) {
+    const monthLabel = monthName(viewDate);
+
+    $("monthlyBreakdownLabel").textContent =
+        `${monthLabel} · unpaid instalments only`;
+
+    const people = [
+        { name: "Eisya", prefix: "monthEisya" },
+        { name: "Capiq", prefix: "monthCapiq" },
+        { name: "Everyone", prefix: "monthEveryone" }
+    ];
+
+    people.forEach(({ name, prefix }) => {
+        const personEvents = monthEvents.filter(event =>
+            normalisePerson(event.debt.person) === name
+        );
+
+        const remaining = getRemainingEvents(personEvents);
+
+        const total = remaining.reduce(
+            (sum, event) => sum + Number(event.amount || 0),
+            0
+        );
+
+        $(`${prefix}Outstanding`).textContent = money(total);
 
         $(`${prefix}Installments`).textContent =
             `${remaining.length} remaining instalments`;
@@ -601,10 +643,8 @@ function renderSelectedDate(events) {
 
 
     // ======================================
-    // NEW BOX: OUTSTANDING THIS DAY
+    // OUTSTANDING THIS DAY
     // ======================================
-
-    // Get only unpaid instalments for the selected date.
 
     const dailyRemaining = getRemainingEvents(dayEvents);
 
@@ -613,12 +653,8 @@ function renderSelectedDate(events) {
         0
     );
 
-    // Update the daily outstanding amount.
-
     $("dailyOutstanding").textContent =
         money(dailyOutstanding);
-
-    // Display selected date and remaining payment count.
 
     $("dailyTotalDate").textContent =
         `${formatDate(selectedDate)} · ${dailyRemaining.length} remaining instalments`;
@@ -1070,8 +1106,8 @@ $("debtForm").addEventListener("submit", async event => {
 
     // VALIDATE PERSON
 
-    if (!["Baby", "Sayang", "Everyone"].includes(record.person)) {
-        showMessage("Please choose Baby, Sayang or Everyone.", true);
+    if (!["Eisya", "Capiq", "Everyone"].includes(record.person)) {
+        showMessage("Please choose Eisya, Capiq or Everyone.", true);
         return;
     }
 

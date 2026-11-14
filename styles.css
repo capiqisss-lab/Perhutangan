@@ -1,3 +1,4 @@
+
 :root {
     --blue-50: #f5faff;
     --blue-100: #eaf5ff;
@@ -275,6 +276,17 @@ p {
 .summary-card > span {
     color: var(--muted);
     font-size: 10px;
+}
+
+/* SECONDARY SUMMARY */
+
+.secondary-summary-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin-bottom: 14px;
+}
+
+.secondary-summary-grid .summary-card {
+    min-height: 125px;
 }
 
 /* QUICK SUMMARY */
@@ -1199,6 +1211,10 @@ p {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
+    .secondary-summary-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
     .filter-row {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
@@ -1258,6 +1274,15 @@ p {
 
     .summary-card h2 {
         font-size: 20px;
+    }
+
+    .secondary-summary-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 9px;
+    }
+
+    .secondary-summary-grid .summary-card:last-child {
+        grid-column: 1 / -1;
     }
 
     .quick-summary-grid {

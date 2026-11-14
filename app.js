@@ -18,7 +18,7 @@ const supabaseClient = window.supabase.createClient(
 
 /* DEBT TYPES */
 
-const DEBT_TYPE_LABELS = {
+const DEBT_TYPES = {
     tiktokloan: "TikTok Loan",
     tiktokpaylater: "TikTok PayLater",
     sloan: "SLoan",
@@ -29,17 +29,6 @@ const DEBT_TYPE_LABELS = {
     boostloan: "Boost Loan",
     other: "Other"
 };
-
-const DEBT_TYPE_ORDER = [
-    "tiktokloan",
-    "tiktokpaylater",
-    "sloan",
-    "spaylater",
-    "atomeloan",
-    "atomecard",
-    "atomepaylater",
-    "boostloan"
-];
 
 /* APPLICATION STATE */
 
@@ -52,17 +41,17 @@ let calendarMonth = new Date(
     1
 );
 
-let selectedDate = toDateKey(new Date());
-let isSaving = false;
-let toastTimeout = null;
+let selectedDate = dateKey(new Date());
+let savingDebt = false;
+let toastTimer = null;
 
-/* HELPERS */
+/* BASIC HELPERS */
 
 function $(id) {
     return document.getElementById(id);
 }
 
-function money(value) {
+function amount(value) {
     return new Intl.NumberFormat("en-MY", {
         style: "currency",
         currency: "MYR",
@@ -81,41 +70,7 @@ function escapeHTML(value) {
     })[character]);
 }
 
-function normalizeDebtType(value) {
-    const normalized = String(value || "other")
-        .trim()
-        .toLowerCase()
-        .replace(/[\s_-]+/g, "");
-
-    const aliases = {
-        "tiktokloan": "tiktokloan",
-        "tiktokpaylater": "tiktokpaylater",
-        "sloan": "sloan",
-        "spaylater": "spaylater",
-        "atomeloan": "atomeloan",
-        "atomecard": "atomecard",
-        "atomepaylater": "atomepaylater",
-        "boostloan": "boostloan",
-        "other": "other"
-    };
-
-    return aliases[normalized] || normalized || "other";
-}
-
-function debtTypeLabel(value) {
-    const type = normalizeDebtType(value);
-
-    if (DEBT_TYPE_LABELS[type]) {
-        return DEBT_TYPE_LABELS[type];
-    }
-
-    return type
-        .replace(/([a-z])([0-9])/gi, "$1 $2")
-        .replace(/([a-z])([A-Z])/g, "$1 $2")
-        .replace(/^./, letter => letter.toUpperCase());
-}
-
-function toDateKey(date) {
+function dateKey(date) {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, "0");
     const day = String(date.getDate()).padStart(2, "0");
@@ -123,39 +78,44 @@ function toDateKey(date) {
     return `${year}-${month}-${day}`;
 }
 
-function parseDateKey(value) {
+function parseDate(value) {
     if (!value) return null;
 
     const parts = String(value).slice(0, 10).split("-").map(Number);
 
-    if (parts.length !== 3 || parts.some(Number.isNaN)) {
+    if (parts.length !== 3 || parts.some(number => !Number.isFinite(number))) {
         return null;
     }
 
-    return new Date(parts[0], parts[1] - 1, parts[2]);
+    const date = new Date(parts[0], parts[1] - 1, parts[2]);
+
+    if (Number.isNaN(date.getTime())) return null;
+
+    return date;
 }
 
-function formatDate(value, options = {}) {
-    const date = value instanceof Date ? value : parseDateKey(value);
+function formatDate(value) {
+    const date = value instanceof Date ? value : parseDate(value);
 
-    if (!date || Number.isNaN(date.getTime())) {
-        return "Not set";
-    }
+    if (!date) return "Not set";
 
     return date.toLocaleDateString("en-MY", {
         day: "numeric",
-        month: "short",
-        year: "numeric",
-        ...options
+        month: "long",
+        year: "numeric"
     });
 }
 
-function addMonthsClamped(date, monthsToAdd) {
-    const originalDay = date.getDate();
+function monthKey(date) {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function addMonthsClamped(date, count) {
+    const day = date.getDate();
 
     const result = new Date(
         date.getFullYear(),
-        date.getMonth() + monthsToAdd,
+        date.getMonth() + count,
         1
     );
 
@@ -165,21 +125,63 @@ function addMonthsClamped(date, monthsToAdd) {
         0
     ).getDate();
 
-    result.setDate(Math.min(originalDay, lastDay));
+    result.setDate(Math.min(day, lastDay));
 
     return result;
 }
 
-function isBeforeToday(dateKey) {
-    return dateKey < toDateKey(new Date());
+function isOverdue(dueDate) {
+    return dueDate < dateKey(new Date());
 }
 
-function getMonthKey(date) {
-    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+function normalizeType(value) {
+    const cleaned = String(value || "other")
+        .trim()
+        .toLowerCase()
+        .replace(/[\s_-]+/g, "");
+
+    const aliases = {
+        tiktokloan: "tiktokloan",
+        tiktokpaylater: "tiktokpaylater",
+        sloan: "sloan",
+        spaylater: "spaylater",
+        atomeloan: "atomeloan",
+        atomecard: "atomecard",
+        atomepaylater: "atomepaylater",
+        boostloan: "boostloan",
+        other: "other"
+    };
+
+    return aliases[cleaned] || cleaned || "other";
 }
 
-function isInMonth(dateKey, monthKey) {
-    return String(dateKey).slice(0, 7) === monthKey;
+function typeLabel(value) {
+    const type = normalizeType(value);
+
+    return DEBT_TYPES[type] ||
+        type.replace(/([a-z])([A-Z])/g, "$1 $2");
+}
+
+function normalizePerson(value) {
+    const person = String(value || "").trim().toLowerCase();
+
+    if (person === "baby" || person === "eisya") return "Baby";
+    if (person === "sayang" || person === "capiq") return "Sayang";
+    if (person === "everyone" || person === "shared" || person === "both") {
+        return "Everyone";
+    }
+
+    return value || "Everyone";
+}
+
+function personLabel(value) {
+    const person = normalizePerson(value);
+
+    if (person === "Baby") return "Eisya";
+    if (person === "Sayang") return "Capiq";
+    if (person === "Everyone") return "Shared (Both)";
+
+    return String(person);
 }
 
 function showToast(message) {
@@ -189,60 +191,55 @@ function showToast(message) {
     toast.textContent = message;
     toast.classList.add("show");
 
-    clearTimeout(toastTimeout);
+    clearTimeout(toastTimer);
 
-    toastTimeout = setTimeout(() => {
+    toastTimer = setTimeout(() => {
         toast.classList.remove("show");
-    }, 3000);
+    }, 2800);
 }
 
 function setConnectionStatus(message, state = "loading") {
-    const label = $("connectionStatus");
+    $("connectionStatus").textContent = message;
+
     const dot = $("statusDot");
+    dot.className = "status-dot";
 
-    if (label) label.textContent = message;
-
-    if (dot) {
-        dot.className = "status-dot";
-
-        if (state === "connected") {
-            dot.classList.add("connected");
-        } else if (state === "error") {
-            dot.classList.add("error");
-        }
+    if (state === "connected") {
+        dot.classList.add("connected");
+    } else if (state === "error") {
+        dot.classList.add("error");
     }
 }
 
 /* PAYMENT SCHEDULE */
 
 function getDebtSchedule(debt) {
-    const amount = Number(debt.amount) || 0;
+    const monthlyAmount = Number(debt.amount) || 0;
     const months = Math.max(0, Number(debt.months) || 0);
-    const firstDate = parseDateKey(debt.first_due_date);
+    const firstDueDate = parseDate(debt.first_due_date);
 
-    if (!firstDate || !months || amount <= 0) {
+    if (!firstDueDate || months <= 0 || monthlyAmount <= 0) {
         return [];
     }
 
     const schedule = [];
 
     for (let index = 0; index < months; index++) {
-        const dueDate = addMonthsClamped(firstDate, index);
-        const dueDateKey = toDateKey(dueDate);
+        const dueDate = dateKey(addMonthsClamped(firstDueDate, index));
 
-        const paymentRecord = payments.find(payment =>
-            String(payment.debt_id) === String(debt.id) &&
-            String(payment.due_date).slice(0, 10) === dueDateKey
+        const payment = payments.find(item =>
+            String(item.debt_id) === String(debt.id) &&
+            String(item.due_date).slice(0, 10) === dueDate
         );
 
         schedule.push({
             debtId: debt.id,
             debtName: debt.name,
-            person: debt.person,
-            debtType: normalizeDebtType(debt.debt_type),
-            amount,
-            dueDate: dueDateKey,
-            paid: paymentRecord ? Boolean(paymentRecord.paid) : false
+            person: normalizePerson(debt.person),
+            debtType: normalizeType(debt.debt_type),
+            amount: monthlyAmount,
+            dueDate,
+            paid: payment ? Boolean(payment.paid) : false
         });
     }
 
@@ -253,37 +250,33 @@ function getAllSchedule() {
     return debts.flatMap(debt => getDebtSchedule(debt));
 }
 
-function getDebtScheduleFor(debt) {
-    return getDebtSchedule(debt);
-}
-
 function getDebtStats(debt) {
-    const schedule = getDebtScheduleFor(debt);
+    const schedule = getDebtSchedule(debt);
 
-    const paid = schedule.filter(item => item.paid);
-    const unpaid = schedule.filter(item => !item.paid);
-    const overdue = unpaid.filter(item => isBeforeToday(item.dueDate));
+    const paidItems = schedule.filter(item => item.paid);
+    const unpaidItems = schedule.filter(item => !item.paid);
+    const overdueItems = unpaidItems.filter(item => isOverdue(item.dueDate));
 
-    const paidAmount = paid.reduce((sum, item) => sum + item.amount, 0);
-    const outstanding = unpaid.reduce((sum, item) => sum + item.amount, 0);
+    const paidAmount = paidItems.reduce((sum, item) => sum + item.amount, 0);
+    const outstanding = unpaidItems.reduce((sum, item) => sum + item.amount, 0);
 
     return {
         schedule,
-        paidCount: paid.length,
-        unpaidCount: unpaid.length,
-        overdueCount: overdue.length,
+        paidCount: paidItems.length,
+        unpaidCount: unpaidItems.length,
+        overdueCount: overdueItems.length,
         paidAmount,
         outstanding,
-        completed: schedule.length > 0 && unpaid.length === 0,
-        hasOverdue: overdue.length > 0,
+        completed: schedule.length > 0 && unpaidItems.length === 0,
+        hasOverdue: overdueItems.length > 0,
         totalCount: schedule.length,
         progress: schedule.length
-            ? Math.round((paid.length / schedule.length) * 100)
+            ? Math.round((paidItems.length / schedule.length) * 100)
             : 0
     };
 }
 
-/* DATA LOADING */
+/* LOAD DATA */
 
 async function loadData() {
     setConnectionStatus("Connecting...", "loading");
@@ -310,48 +303,63 @@ async function loadData() {
 
         renderEverything();
     } catch (error) {
-        console.error("Unable to load debt data:", error);
+        console.error("Supabase loading error:", error);
 
         setConnectionStatus("Connection error", "error");
 
         $("debtList").innerHTML = `
             <div class="empty-state">
-                <span>!</span>
+                <span class="empty-icon">!</span>
                 <p>Unable to load your debts.</p>
                 <p>${escapeHTML(error.message || "Please check your Supabase settings.")}</p>
             </div>
         `;
 
-        showToast("Could not connect to Supabase.");
+        showToast("Unable to connect to your debt database.");
     }
 }
+
+/* RENDER ALL SECTIONS */
 
 function renderEverything() {
     renderDashboard();
     renderCalendar();
     renderSelectedDatePayments();
-    renderDebtTypeOverview();
     renderMonthlyBreakdown();
     renderDebtList();
+}
+
+/* SELECTED MONTH DATA
+   IMPORTANT:
+   All monthly dashboard calculations use calendarMonth.
+   Changing the calendar month refreshes these figures.
+*/
+
+function getSelectedMonthSchedule() {
+    const selectedMonth = monthKey(calendarMonth);
+
+    return getAllSchedule().filter(item =>
+        item.dueDate.slice(0, 7) === selectedMonth
+    );
 }
 
 /* DASHBOARD */
 
 function renderDashboard() {
     const allSchedule = getAllSchedule();
-    const currentMonth = getMonthKey(new Date());
+    const selectedMonthSchedule = getSelectedMonthSchedule();
 
-    const monthSchedule = allSchedule.filter(item =>
-        isInMonth(item.dueDate, currentMonth)
-    );
-
-    const monthUnpaid = monthSchedule.filter(item => !item.paid);
+    const monthUnpaid = selectedMonthSchedule.filter(item => !item.paid);
     const allUnpaid = allSchedule.filter(item => !item.paid);
     const allPaid = allSchedule.filter(item => item.paid);
 
-    const overdue = allUnpaid.filter(item => isBeforeToday(item.dueDate));
+    const overdueItems = allUnpaid.filter(item => isOverdue(item.dueDate));
 
-    const monthOutstanding = monthUnpaid.reduce(
+    const outstandingThisMonth = monthUnpaid.reduce(
+        (sum, item) => sum + item.amount, 0
+    );
+
+    const dueThisMonth = selectedMonthSchedule.reduce(
         (sum, item) => sum + item.amount, 0
     );
 
@@ -363,31 +371,27 @@ function renderDashboard() {
         (sum, item) => sum + item.amount, 0
     );
 
-    const dueThisMonth = monthSchedule.reduce(
+    const overdueTotal = overdueItems.reduce(
         (sum, item) => sum + item.amount, 0
     );
 
-    const overdueTotal = overdue.reduce(
-        (sum, item) => sum + item.amount, 0
-    );
-
-    const activeMonthDebtIds = new Set(
+    const activeThisMonth = new Set(
         monthUnpaid.map(item => String(item.debtId))
     );
 
-    const overallActiveDebtIds = new Set(
+    const activeOverall = new Set(
         allUnpaid.map(item => String(item.debtId))
     );
 
-    $("totalOutstandingMonth").textContent = money(monthOutstanding);
-    $("activeDebtMonth").textContent = activeMonthDebtIds.size;
+    $("totalOutstandingMonth").textContent = amount(outstandingThisMonth);
+    $("activeDebtMonth").textContent = activeThisMonth.size;
 
-    $("totalOverallOutstanding").textContent = money(overallOutstanding);
-    $("totalOverallActiveDebt").textContent = overallActiveDebtIds.size;
+    $("totalOverallOutstanding").textContent = amount(overallOutstanding);
+    $("totalOverallActiveDebt").textContent = activeOverall.size;
 
-    $("totalPaid").textContent = money(totalPaid);
-    $("dueThisMonth").textContent = money(dueThisMonth);
-    $("overdueTotal").textContent = money(overdueTotal);
+    $("totalPaid").textContent = amount(totalPaid);
+    $("dueThisMonth").textContent = amount(dueThisMonth);
+    $("overdueTotal").textContent = amount(overdueTotal);
 }
 
 /* CALENDAR */
@@ -401,42 +405,47 @@ function renderCalendar() {
         { month: "long", year: "numeric" }
     );
 
-    const firstDay = new Date(year, month, 1);
-    const startDay = firstDay.getDay();
-
+    const firstWeekday = new Date(year, month, 1).getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
-
     const previousMonthDays = new Date(year, month, 0).getDate();
 
-    const schedule = getAllSchedule();
+    const allSchedule = getAllSchedule();
 
     let html = "";
 
     for (let cell = 0; cell < 42; cell++) {
-        let date;
-        let outside = false;
+        let currentDate;
+        let outsideMonth = false;
 
-        if (cell < startDay) {
-            date = new Date(year, month - 1, previousMonthDays - startDay + cell + 1);
-            outside = true;
-        } else if (cell >= startDay + daysInMonth) {
-            date = new Date(year, month + 1, cell - startDay - daysInMonth + 1);
-            outside = true;
+        if (cell < firstWeekday) {
+            currentDate = new Date(
+                year,
+                month - 1,
+                previousMonthDays - firstWeekday + cell + 1
+            );
+            outsideMonth = true;
+        } else if (cell >= firstWeekday + daysInMonth) {
+            currentDate = new Date(
+                year,
+                month + 1,
+                cell - firstWeekday - daysInMonth + 1
+            );
+            outsideMonth = true;
         } else {
-            date = new Date(year, month, cell - startDay + 1);
+            currentDate = new Date(year, month, cell - firstWeekday + 1);
         }
 
-        const dateKey = toDateKey(date);
-        const dayPayments = schedule.filter(item => item.dueDate === dateKey);
+        const key = dateKey(currentDate);
 
-        const hasPaid = dayPayments.some(item => item.paid);
-        const hasOverdue = dayPayments.some(
-            item => !item.paid && isBeforeToday(item.dueDate)
+        const dayItems = allSchedule.filter(item => item.dueDate === key);
+        const hasPaid = dayItems.some(item => item.paid);
+        const hasOverdue = dayItems.some(
+            item => !item.paid && isOverdue(item.dueDate)
         );
-        const hasUnpaid = dayPayments.some(item => !item.paid);
+        const hasUnpaid = dayItems.some(item => !item.paid);
 
-        const today = dateKey === toDateKey(new Date());
-        const selected = dateKey === selectedDate;
+        const today = key === dateKey(new Date());
+        const selected = key === selectedDate;
 
         let markers = "";
 
@@ -452,13 +461,13 @@ function renderCalendar() {
             <button
                 type="button"
                 class="calendar-day
-                    ${outside ? "outside-month" : ""}
+                    ${outsideMonth ? "outside-month" : ""}
                     ${today ? "today" : ""}
                     ${selected ? "selected" : ""}"
-                data-date="${dateKey}"
-                aria-label="${escapeHTML(formatDate(dateKey))}"
+                data-date="${key}"
+                aria-label="${escapeHTML(formatDate(key))}"
             >
-                <span class="calendar-day-number">${date.getDate()}</span>
+                <span class="calendar-day-number">${currentDate.getDate()}</span>
                 <span class="day-markers">${markers}</span>
             </button>
         `;
@@ -467,45 +476,53 @@ function renderCalendar() {
     $("calendarGrid").innerHTML = html;
 }
 
-function changeCalendarMonth(amount) {
+function changeCalendarMonth(direction) {
     calendarMonth = new Date(
         calendarMonth.getFullYear(),
-        calendarMonth.getMonth() + amount,
+        calendarMonth.getMonth() + direction,
         1
     );
 
-    selectedDate = toDateKey(calendarMonth);
-    renderCalendar();
-    renderSelectedDatePayments();
+    /* Select the first day of the newly displayed month. */
+    selectedDate = dateKey(calendarMonth);
+
+    /* Refresh every month-dependent section. */
+    renderEverything();
 }
 
-/* SELECTED DATE PAYMENTS */
+/* PAYMENT DETAILS */
 
 function renderSelectedDatePayments() {
-    const schedule = getAllSchedule().filter(item =>
+    const items = getAllSchedule().filter(item =>
         item.dueDate === selectedDate
     );
 
     $("selectedDateTitle").textContent = formatDate(selectedDate);
 
-    const unpaidTotal = schedule
+    const unpaidTotal = items
         .filter(item => !item.paid)
         .reduce((sum, item) => sum + item.amount, 0);
 
-    $("selectedDateTotal").textContent = money(unpaidTotal);
+    $("selectedDateTotal").textContent = amount(unpaidTotal);
 
-    if (!schedule.length) {
+    if (!items.length) {
         $("selectedDatePayments").innerHTML = `
             <div class="empty-state">
-                <span>♡</span>
+                <span class="empty-icon">♡</span>
                 <p>No scheduled payments for this date.</p>
+                <p>Choose another date on the calendar.</p>
             </div>
         `;
         return;
     }
 
-    $("selectedDatePayments").innerHTML = schedule.map(item => {
-        const overdue = !item.paid && isBeforeToday(item.dueDate);
+    const sortedItems = [...items].sort((a, b) => {
+        if (a.paid !== b.paid) return a.paid ? 1 : -1;
+        return a.debtName.localeCompare(b.debtName);
+    });
+
+    $("selectedDatePayments").innerHTML = sortedItems.map(item => {
+        const overdue = !item.paid && isOverdue(item.dueDate);
 
         const statusClass = item.paid
             ? "status-paid"
@@ -514,46 +531,60 @@ function renderSelectedDatePayments() {
                 : "status-upcoming";
 
         const statusLabel = item.paid
-            ? "PAID"
+            ? "✓ PAID"
             : overdue
-                ? "OVERDUE"
-                : "UNPAID";
+                ? "! OVERDUE"
+                : "● UNPAID";
+
+        const button = item.paid
+            ? `
+                <button
+                    type="button"
+                    class="payment-action undo-paid-button"
+                    data-action="undo"
+                    data-debt-id="${escapeHTML(item.debtId)}"
+                    data-due-date="${item.dueDate}"
+                >
+                    ↶ Undo payment
+                </button>
+            `
+            : `
+                <button
+                    type="button"
+                    class="payment-action mark-paid-button"
+                    data-action="pay"
+                    data-debt-id="${escapeHTML(item.debtId)}"
+                    data-due-date="${item.dueDate}"
+                >
+                    ✓ Mark as paid
+                </button>
+            `;
 
         return `
-            <div class="payment-item">
+            <article class="payment-item">
                 <div class="payment-info">
                     <strong>${escapeHTML(item.debtName)}</strong>
-                    <small>${escapeHTML(item.person)} · ${escapeHTML(debtTypeLabel(item.debtType))}</small>
-                    <div style="margin-top:7px">
+                    <small>${escapeHTML(personLabel(item.person))} · ${escapeHTML(typeLabel(item.debtType))}</small>
+                    <div style="margin-top:8px">
                         <span class="status-pill ${statusClass}">${statusLabel}</span>
                     </div>
                 </div>
 
                 <div class="payment-right">
-                    <strong>${money(item.amount)}</strong>
-                    <div style="margin-top:7px">
-                        <button
-                            type="button"
-                            class="small-action ${item.paid ? "undo-button" : "pay-button"}"
-                            data-action="${item.paid ? "undo" : "pay"}"
-                            data-debt-id="${escapeHTML(item.debtId)}"
-                            data-due-date="${item.dueDate}"
-                        >
-                            ${item.paid ? "Undo" : "Mark Paid"}
-                        </button>
-                    </div>
+                    <strong>${amount(item.amount)}</strong>
+                    <div style="margin-top:9px">${button}</div>
                 </div>
-            </div>
+            </article>
         `;
     }).join("");
 }
 
-/* PAYMENT ACTIONS */
+/* UPDATE PAYMENT STATUS */
 
 async function setPaymentStatus(debtId, dueDate, paid) {
-    const existing = payments.find(payment =>
-        String(payment.debt_id) === String(debtId) &&
-        String(payment.due_date).slice(0, 10) === dueDate
+    const existing = payments.find(item =>
+        String(item.debt_id) === String(debtId) &&
+        String(item.due_date).slice(0, 10) === dueDate
     );
 
     try {
@@ -567,8 +598,8 @@ async function setPaymentStatus(debtId, dueDate, paid) {
 
             if (error) throw error;
 
-            payments = payments.map(payment =>
-                String(payment.id) === String(existing.id) ? data : payment
+            payments = payments.map(item =>
+                String(item.id) === String(existing.id) ? data : item
             );
         } else {
             const { data, error } = await supabaseClient
@@ -587,113 +618,61 @@ async function setPaymentStatus(debtId, dueDate, paid) {
         }
 
         renderEverything();
-        showToast(paid ? "Payment marked as paid ♡" : "Payment changed to unpaid.");
+
+        showToast(
+            paid
+                ? "Payment successfully marked as paid ♡"
+                : "Payment changed back to unpaid."
+        );
     } catch (error) {
         console.error("Payment update failed:", error);
         showToast(error.message || "Unable to update payment.");
     }
 }
 
-/* DEBT TYPE OVERVIEW */
-
-function renderDebtTypeOverview() {
-    const allSchedule = getAllSchedule();
-    const currentMonth = getMonthKey(new Date());
-
-    const unpaid = allSchedule.filter(item => !item.paid);
-    const monthUnpaid = unpaid.filter(item =>
-        isInMonth(item.dueDate, currentMonth)
-    );
-
-    const monthAmount = monthUnpaid.reduce(
-        (sum, item) => sum + item.amount, 0
-    );
-
-    const overallAmount = unpaid.reduce(
-        (sum, item) => sum + item.amount, 0
-    );
-
-    $("typeMonthCount").textContent = monthUnpaid.length;
-    $("typeMonthAmount").textContent = `${money(monthAmount)} unpaid`;
-
-    $("typeOverallCount").textContent = unpaid.length;
-    $("typeOverallAmount").textContent = `${money(overallAmount)} unpaid`;
-
-    const typesPresent = new Set([
-        ...DEBT_TYPE_ORDER,
-        ...debts.map(debt => normalizeDebtType(debt.debt_type))
-    ]);
-
-    const typeKeys = Array.from(typesPresent);
-
-    $("debtTypeOverview").innerHTML = typeKeys.map(type => {
-        const monthItems = monthUnpaid.filter(item => item.debtType === type);
-        const allItems = unpaid.filter(item => item.debtType === type);
-
-        const monthTotal = monthItems.reduce(
-            (sum, item) => sum + item.amount, 0
-        );
-
-        const allTotal = allItems.reduce(
-            (sum, item) => sum + item.amount, 0
-        );
-
-        return `
-            <div class="debt-type-row">
-                <div class="debt-type-row-name">
-                    <strong>${escapeHTML(debtTypeLabel(type))}</strong>
-                </div>
-
-                <div class="debt-type-column">
-                    <strong>${monthItems.length}</strong>
-                    <small>${money(monthTotal)}</small>
-                </div>
-
-                <div class="debt-type-column">
-                    <strong>${allItems.length}</strong>
-                    <small>${money(allTotal)}</small>
-                </div>
-            </div>
-        `;
-    }).join("");
-}
-
 /* MONTHLY BREAKDOWN */
 
 function renderMonthlyBreakdown() {
-    const currentMonth = getMonthKey(new Date());
-
-    const monthItems = getAllSchedule().filter(item =>
-        isInMonth(item.dueDate, currentMonth)
+    const selectedMonth = calendarMonth.toLocaleDateString(
+        "en-MY",
+        { month: "long", year: "numeric" }
     );
 
-    const paid = monthItems.filter(item => item.paid);
-    const unpaid = monthItems.filter(item => !item.paid);
+    $("monthlyBreakdownTitle").textContent = `${selectedMonth} summary`;
+    $("monthlyBreakdownLabel").textContent =
+        `A breakdown of commitments for ${selectedMonth}.`;
 
-    const dueTotal = monthItems.reduce(
+    const items = getSelectedMonthSchedule();
+
+    const paidItems = items.filter(item => item.paid);
+    const unpaidItems = items.filter(item => !item.paid);
+
+    const totalScheduled = items.reduce(
         (sum, item) => sum + item.amount, 0
     );
 
-    const paidTotal = paid.reduce(
+    const totalPaid = paidItems.reduce(
         (sum, item) => sum + item.amount, 0
     );
 
-    const remainingTotal = unpaid.reduce(
+    const totalRemaining = unpaidItems.reduce(
         (sum, item) => sum + item.amount, 0
     );
 
-    $("monthDueTotal").textContent = money(dueTotal);
-    $("monthPaidTotal").textContent = money(paidTotal);
-    $("monthRemainingTotal").textContent = money(remainingTotal);
+    $("monthDueTotal").textContent = amount(totalScheduled);
+    $("monthPaidTotal").textContent = amount(totalPaid);
+    $("monthRemainingTotal").textContent = amount(totalRemaining);
+    $("monthUnpaidCount").textContent = unpaidItems.length;
 
     const people = [
-        { name: "Baby", icon: "♡", className: "baby-card" },
-        { name: "Sayang", icon: "♡", className: "sayang-card" }
+        { key: "Baby", label: "Eisya" },
+        { key: "Sayang", label: "Capiq" },
+        { key: "Everyone", label: "Shared (Both)" }
     ];
 
     $("monthBreakdown").innerHTML = people.map(person => {
-        const personItems = monthItems.filter(item =>
-            item.person === person.name
+        const personItems = items.filter(item =>
+            normalizePerson(item.person) === person.key
         );
 
         const personPaid = personItems
@@ -704,29 +683,37 @@ function renderMonthlyBreakdown() {
             .filter(item => !item.paid)
             .reduce((sum, item) => sum + item.amount, 0);
 
-        const personTotal = personItems.reduce(
+        const personScheduled = personItems.reduce(
             (sum, item) => sum + item.amount, 0
         );
 
+        const personUnpaidCount = personItems.filter(
+            item => !item.paid
+        ).length;
+
         return `
-            <article class="person-card ${person.className}">
+            <article class="person-card">
                 <div class="person-heading">
-                    <span class="person-avatar">${person.icon}</span>
-                    <strong>${person.name}</strong>
+                    <span class="person-avatar">♡</span>
+                    <strong>${person.label}</strong>
                 </div>
 
                 <div class="person-numbers">
                     <div>
-                        <small>Total due</small>
-                        <strong>${money(personTotal)}</strong>
+                        <small>Scheduled</small>
+                        <strong>${amount(personScheduled)}</strong>
                     </div>
                     <div>
                         <small>Paid</small>
-                        <strong>${money(personPaid)}</strong>
+                        <strong>${amount(personPaid)}</strong>
                     </div>
                     <div>
                         <small>Remaining</small>
-                        <strong>${money(personUnpaid)}</strong>
+                        <strong>${amount(personUnpaid)}</strong>
+                    </div>
+                    <div>
+                        <small>Unpaid instalments</small>
+                        <strong>${personUnpaidCount}</strong>
                     </div>
                 </div>
             </article>
@@ -734,7 +721,7 @@ function renderMonthlyBreakdown() {
     }).join("");
 }
 
-/* ALL COMMITMENTS FILTER */
+/* ALL DEBTS FILTER */
 
 function getFilteredDebts() {
     const search = $("debtSearch").value.trim().toLowerCase();
@@ -745,24 +732,21 @@ function getFilteredDebts() {
     return debts.filter(debt => {
         const stats = getDebtStats(debt);
 
-        const name = String(debt.name || "").toLowerCase();
+        const debtName = String(debt.name || "").toLowerCase();
         const note = String(debt.note || "").toLowerCase();
 
         const matchesSearch =
             !search ||
-            name.includes(search) ||
+            debtName.includes(search) ||
             note.includes(search);
 
         const matchesPerson =
             selectedPerson === "all" ||
-            String(debt.person) === selectedPerson;
+            normalizePerson(debt.person) === selectedPerson;
 
-        const debtType = normalizeDebtType(debt.debt_type);
-        const filterType = normalizeDebtType(selectedType);
-
-        const matchesDebtType =
+        const matchesType =
             selectedType === "all" ||
-            debtType === filterType;
+            normalizeType(debt.debt_type) === normalizeType(selectedType);
 
         let matchesStatus = true;
 
@@ -777,42 +761,40 @@ function getFilteredDebts() {
         return (
             matchesSearch &&
             matchesPerson &&
-            matchesDebtType &&
+            matchesType &&
             matchesStatus
         );
     });
 }
 
 function renderDebtList() {
-    const filteredDebts = getFilteredDebts();
+    const filtered = getFilteredDebts();
 
-    $("debtCount").textContent = filteredDebts.length;
+    $("debtCount").textContent = filtered.length;
 
-    const activeFilters = [
-        $("debtSearch").value.trim(),
-        $("personFilter").value !== "all",
-        $("statusFilter").value !== "all",
-        $("debtTypeFilter").value !== "all"
-    ].some(Boolean);
+    const hasFilters =
+        $("debtSearch").value.trim() !== "" ||
+        $("personFilter").value !== "all" ||
+        $("statusFilter").value !== "all" ||
+        $("debtTypeFilter").value !== "all";
 
-    $("filterMessage").textContent = activeFilters
-        ? `Showing ${filteredDebts.length} matching debt account(s).`
+    $("filterMessage").textContent = hasFilters
+        ? `Showing ${filtered.length} matching debt account(s).`
         : "";
 
-    if (!filteredDebts.length) {
+    if (!filtered.length) {
         $("debtList").innerHTML = `
             <div class="empty-state">
-                <span>♡</span>
+                <span class="empty-icon">♡</span>
                 <p>No matching debts found.</p>
-                <p>Try changing your filters or add a new debt.</p>
+                <p>Try changing your filters.</p>
             </div>
         `;
         return;
     }
 
-    $("debtList").innerHTML = filteredDebts.map(debt => {
+    $("debtList").innerHTML = filtered.map(debt => {
         const stats = getDebtStats(debt);
-
         const nextPayment = stats.schedule.find(item => !item.paid);
 
         const nextDue = nextPayment
@@ -831,46 +813,34 @@ function renderDebtList() {
                 ? "OVERDUE"
                 : "ACTIVE";
 
-        const progressWidth = Math.max(0, Math.min(100, stats.progress));
-
-        const type = normalizeDebtType(debt.debt_type);
-
         return `
             <article class="debt-card">
                 <div class="debt-card-top">
                     <div>
                         <h3>${escapeHTML(debt.name)}</h3>
-                        <span class="debt-person">${escapeHTML(debt.person)}</span>
+                        <span class="debt-person">${escapeHTML(personLabel(debt.person))}</span>
                     </div>
-
-                    <span class="status-pill ${statusClass}">
-                        ${statusLabel}
-                    </span>
+                    <span class="status-pill ${statusClass}">${statusLabel}</span>
                 </div>
 
-                <div class="debt-type-badge">
-                    ${escapeHTML(debtTypeLabel(type))}
-                </div>
+                <span class="debt-type-badge">${escapeHTML(typeLabel(debt.debt_type))}</span>
 
-                <div class="debt-amount">${money(debt.amount)}</div>
+                <div class="debt-amount">${amount(debt.amount)}</div>
                 <div class="debt-amount-label">Monthly instalment</div>
 
                 <div class="debt-details">
                     <div>
                         <span>Outstanding</span>
-                        <strong>${money(stats.outstanding)}</strong>
+                        <strong>${amount(stats.outstanding)}</strong>
                     </div>
-
                     <div>
                         <span>Next due date</span>
                         <strong>${escapeHTML(nextDue)}</strong>
                     </div>
-
                     <div>
                         <span>Paid instalments</span>
                         <strong>${stats.paidCount} / ${stats.totalCount}</strong>
                     </div>
-
                     <div>
                         <span>Remaining instalments</span>
                         <strong>${stats.unpaidCount}</strong>
@@ -878,12 +848,12 @@ function renderDebtList() {
                 </div>
 
                 <div class="debt-progress">
-                    <div class="debt-progress-fill" style="width:${progressWidth}%"></div>
+                    <div class="debt-progress-fill" style="width:${stats.progress}%"></div>
                 </div>
 
                 <div class="debt-progress-label">
                     <span>Payment progress</span>
-                    <strong>${progressWidth}%</strong>
+                    <strong>${stats.progress}%</strong>
                 </div>
 
                 ${debt.note ? `
@@ -941,21 +911,21 @@ function closeModal() {
 }
 
 function updateEstimatedTotal() {
-    const amount = Number($("amount").value) || 0;
+    const monthlyAmount = Number($("amount").value) || 0;
     const months = Number($("months").value) || 0;
 
-    $("estimatedTotal").textContent = money(amount * months);
+    $("estimatedTotal").textContent = amount(monthlyAmount * months);
 }
 
 async function addDebt(event) {
     event.preventDefault();
 
-    if (isSaving) return;
+    if (savingDebt) return;
 
     const person = $("person").value;
     const name = $("debtName").value.trim();
-    const debtType = normalizeDebtType($("debtType").value);
-    const amount = Number($("amount").value);
+    const debtType = normalizeType($("debtType").value);
+    const monthlyAmount = Number($("amount").value);
     const months = Number($("months").value);
     const firstDueDate = $("firstDueDate").value;
     const note = $("note").value.trim();
@@ -965,7 +935,7 @@ async function addDebt(event) {
         return;
     }
 
-    if (!Number.isFinite(amount) || amount <= 0) {
+    if (!Number.isFinite(monthlyAmount) || monthlyAmount <= 0) {
         $("formMessage").textContent = "Enter a valid monthly instalment.";
         return;
     }
@@ -975,7 +945,7 @@ async function addDebt(event) {
         return;
     }
 
-    isSaving = true;
+    savingDebt = true;
     $("saveDebtButton").disabled = true;
     $("saveDebtButton").textContent = "Saving...";
 
@@ -986,7 +956,7 @@ async function addDebt(event) {
                 person,
                 name,
                 debt_type: debtType,
-                amount,
+                amount: monthlyAmount,
                 months,
                 first_due_date: firstDueDate,
                 note: note || null
@@ -997,7 +967,7 @@ async function addDebt(event) {
         $("debtForm").reset();
         $("person").value = "Baby";
         $("debtType").value = "tiktokloan";
-        $("estimatedTotal").textContent = money(0);
+        $("estimatedTotal").textContent = amount(0);
 
         closeModal();
 
@@ -1006,9 +976,10 @@ async function addDebt(event) {
         showToast("New debt added successfully ♡");
     } catch (error) {
         console.error("Unable to save debt:", error);
-        $("formMessage").textContent = error.message || "Unable to save debt.";
+        $("formMessage").textContent =
+            error.message || "Unable to save debt. Please try again.";
     } finally {
-        isSaving = false;
+        savingDebt = false;
         $("saveDebtButton").disabled = false;
         $("saveDebtButton").textContent = "Save Debt ♡";
     }
@@ -1017,12 +988,14 @@ async function addDebt(event) {
 /* DELETE DEBT */
 
 async function deleteDebt(debtId) {
-    const debt = debts.find(item => String(item.id) === String(debtId));
+    const debt = debts.find(item =>
+        String(item.id) === String(debtId)
+    );
 
     if (!debt) return;
 
     const confirmed = window.confirm(
-        `Delete "${debt.name}" and its payment records?\n\nThis cannot be undone.`
+        `Delete "${debt.name}" and all its payment records?\n\nThis cannot be undone.`
     );
 
     if (!confirmed) return;
@@ -1042,13 +1015,16 @@ async function deleteDebt(debtId) {
 
         if (debtError) throw debtError;
 
-        debts = debts.filter(item => String(item.id) !== String(debtId));
-        payments = payments.filter(
-            item => String(item.debt_id) !== String(debtId)
+        debts = debts.filter(item =>
+            String(item.id) !== String(debtId)
+        );
+
+        payments = payments.filter(item =>
+            String(item.debt_id) !== String(debtId)
         );
 
         renderEverything();
-        showToast("Debt deleted.");
+        showToast("Debt deleted successfully.");
     } catch (error) {
         console.error("Delete failed:", error);
         showToast(error.message || "Unable to delete debt.");
@@ -1058,7 +1034,9 @@ async function deleteDebt(debtId) {
 /* UNDO LATEST PAYMENT */
 
 async function undoLatestPayment(debtId) {
-    const debt = debts.find(item => String(item.id) === String(debtId));
+    const debt = debts.find(item =>
+        String(item.id) === String(debtId)
+    );
 
     if (!debt) return;
 
@@ -1067,7 +1045,7 @@ async function undoLatestPayment(debtId) {
         .sort((a, b) => b.dueDate.localeCompare(a.dueDate));
 
     if (!paidItems.length) {
-        showToast("No paid instalments to undo.");
+        showToast("There are no paid instalments to undo.");
         return;
     }
 
@@ -1097,27 +1075,37 @@ function setupEventListeners() {
     $("amount").addEventListener("input", updateEstimatedTotal);
     $("months").addEventListener("input", updateEstimatedTotal);
 
-    $("prevMonth").addEventListener("click", () => changeCalendarMonth(-1));
-    $("nextMonth").addEventListener("click", () => changeCalendarMonth(1));
+    $("prevMonth").addEventListener("click", () => {
+        changeCalendarMonth(-1);
+    });
+
+    $("nextMonth").addEventListener("click", () => {
+        changeCalendarMonth(1);
+    });
 
     $("refreshButton").addEventListener("click", loadData);
 
     $("calendarGrid").addEventListener("click", event => {
-        const button = event.target.closest("[data-date]");
-        if (!button) return;
+        const dayButton = event.target.closest("[data-date]");
 
-        selectedDate = button.dataset.date;
+        if (!dayButton) return;
 
-        const date = parseDateKey(selectedDate);
+        selectedDate = dayButton.dataset.date;
 
-        calendarMonth = new Date(date.getFullYear(), date.getMonth(), 1);
+        const selected = parseDate(selectedDate);
 
-        renderCalendar();
-        renderSelectedDatePayments();
+        calendarMonth = new Date(
+            selected.getFullYear(),
+            selected.getMonth(),
+            1
+        );
+
+        renderEverything();
     });
 
     $("selectedDatePayments").addEventListener("click", async event => {
         const button = event.target.closest("[data-action]");
+
         if (!button) return;
 
         const action = button.dataset.action;
@@ -1133,6 +1121,7 @@ function setupEventListeners() {
 
     $("debtList").addEventListener("click", async event => {
         const button = event.target.closest("[data-action]");
+
         if (!button) return;
 
         const action = button.dataset.action;
@@ -1159,11 +1148,10 @@ function setupEventListeners() {
 document.addEventListener("DOMContentLoaded", () => {
     setupEventListeners();
 
-    $("firstDueDate").value = toDateKey(new Date());
+    $("firstDueDate").value = dateKey(new Date());
 
     updateEstimatedTotal();
 
-    renderCalendar();
-
+    renderEverything();
     loadData();
 });

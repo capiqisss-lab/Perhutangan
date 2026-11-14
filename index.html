@@ -7,132 +7,144 @@
     <meta name="theme-color" content="#eaf6ff">
     <title>Perhutangan ♡</title>
     <link rel="stylesheet" href="styles.css">
-
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="app.js" defer></script>
 </head>
-
 <body>
-    <!-- Animated background -->
     <div class="sky-background" aria-hidden="true">
         <div class="cloud cloud-one"></div>
         <div class="cloud cloud-two"></div>
         <div class="cloud cloud-three"></div>
+        <div class="cloud cloud-four"></div>
         <div class="floating-heart heart-one">♡</div>
         <div class="floating-heart heart-two">♡</div>
         <div class="floating-heart heart-three">♡</div>
     </div>
 
-    <div class="app-shell">
-
-        <!-- HEADER -->
+    <main class="app-shell">
         <header class="topbar">
             <a class="brand" href="#">
-                <div class="brand-icon">♡</div>
-                <div>
-                    <strong>Perhutangan ♡</strong>
-                    <small>SHARED FAMILY FINANCE</small>
-                </div>
+                <span class="brand-icon">♡</span>
+                <span>
+                    <strong>Perhutangan</strong>
+                    <small>OUR LITTLE DEBT TRACKER</small>
+                </span>
             </a>
 
-            <div class="connection-status">
-                <span id="statusDot" class="status-dot"></span>
-                <span id="connectionStatus">Connecting...</span>
+            <div class="topbar-right">
+                <div class="connection">
+                    <span id="statusDot" class="status-dot"></span>
+                    <span id="connectionStatus">Connecting...</span>
+                </div>
+                <button id="refreshButton" class="icon-button" type="button" title="Refresh data">
+                    ↻
+                </button>
             </div>
         </header>
 
-        <main class="main-content">
+        <section class="welcome-section">
+            <div>
+                <p class="eyebrow">SHARED FAMILY FINANCE</p>
+                <h1>Our little commitments<span> ♡</span></h1>
+                <p class="welcome-copy">Keeping track of every payment, one month at a time.</p>
+            </div>
+            <div class="welcome-decoration" aria-hidden="true">
+                <span>☁</span>
+                <span>♡</span>
+            </div>
+        </section>
 
-            <!-- WELCOME -->
-            <section class="welcome-section">
+        <!-- DASHBOARD -->
+        <section class="section">
+            <div class="section-heading">
                 <div>
-                    <p class="eyebrow">OUR LITTLE FINANCE SPACE ♡</p>
-                    <h1>Our debts, <span>together.</span></h1>
-                    <p class="welcome-description">
-                        Keeping track of our commitments, one month at a time.
-                    </p>
+                    <p class="eyebrow">OVERVIEW</p>
+                    <h2>Money at a glance</h2>
+                    <p class="section-subtitle">Your debt summary for the selected calendar month.</p>
                 </div>
+            </div>
 
-                <button class="primary-button" id="addDebtButton" type="button">
-                    <span>＋</span> Add New Debt
-                </button>
-            </section>
-
-            <!-- DASHBOARD -->
-            <section class="section-block">
-                <div class="section-heading">
-                    <div>
-                        <p class="eyebrow">OUR OVERVIEW</p>
-                        <h2>Debt Dashboard</h2>
+            <div class="dashboard-grid">
+                <article class="summary-card primary-card">
+                    <div class="summary-top">
+                        <span class="summary-icon">₊˚</span>
+                        <span class="summary-label">TOTAL OUTSTANDING THIS MONTH</span>
                     </div>
-                    <button class="icon-button" id="refreshButton" type="button" title="Refresh">
-                        ↻
-                    </button>
-                </div>
+                    <strong id="totalOutstandingMonth" class="summary-value">RM 0.00</strong>
+                    <p>Unpaid instalments this month</p>
+                </article>
 
-                <div class="summary-grid">
-                    <article class="summary-card summary-main">
-                        <div class="summary-icon">♡</div>
-                        <p>Total Outstanding This Month</p>
-                        <h2 id="totalOutstandingMonth">RM 0.00</h2>
-                        <span>Unpaid instalments this month</span>
-                    </article>
-
-                    <article class="summary-card">
-                        <div class="summary-icon">▣</div>
-                        <p>Active Debt This Month</p>
-                        <h2 id="activeDebtMonth">0</h2>
-                        <span>Debt accounts with unpaid instalments</span>
-                    </article>
-
-                    <article class="summary-card">
-                        <div class="summary-icon">♡</div>
-                        <p>Total Overall Outstanding</p>
-                        <h2 id="totalOverallOutstanding">RM 0.00</h2>
-                        <span>All remaining unpaid instalments</span>
-                    </article>
-
-                    <article class="summary-card">
-                        <div class="summary-icon">▤</div>
-                        <p>Total Overall Active Debt</p>
-                        <h2 id="totalOverallActiveDebt">0</h2>
-                        <span>Accounts with remaining balances</span>
-                    </article>
-                </div>
-
-                <div class="quick-summary-grid">
-                    <article class="quick-card">
-                        <span class="quick-label">TOTAL PAID</span>
-                        <strong id="totalPaid">RM 0.00</strong>
-                        <small>All recorded paid instalments</small>
-                    </article>
-
-                    <article class="quick-card">
-                        <span class="quick-label">DUE THIS MONTH</span>
-                        <strong id="dueThisMonth">RM 0.00</strong>
-                        <small>Scheduled instalments this month</small>
-                    </article>
-
-                    <article class="quick-card">
-                        <span class="quick-label">OVERDUE</span>
-                        <strong id="overdueTotal">RM 0.00</strong>
-                        <small>Unpaid instalments past their due date</small>
-                    </article>
-                </div>
-            </section>
-
-            <!-- CALENDAR: IMMEDIATELY AFTER DASHBOARD -->
-            <section class="panel section-block" id="calendarSection">
-                <div class="panel-heading calendar-heading">
-                    <div>
-                        <p class="eyebrow">MONTHLY PAYMENT SCHEDULE</p>
-                        <h2>Our Calendar ♡</h2>
+                <article class="summary-card">
+                    <div class="summary-top">
+                        <span class="summary-icon">▣</span>
+                        <span class="summary-label">ACTIVE DEBT THIS MONTH</span>
                     </div>
+                    <strong id="activeDebtMonth" class="summary-value">0</strong>
+                    <p>Debt accounts with unpaid instalments</p>
+                </article>
 
-                    <div class="calendar-controls">
-                        <button class="icon-button" id="prevMonth" type="button">‹</button>
-                        <strong id="calendarTitle">Month Year</strong>
-                        <button class="icon-button" id="nextMonth" type="button">›</button>
+                <article class="summary-card">
+                    <div class="summary-top">
+                        <span class="summary-icon">♡</span>
+                        <span class="summary-label">TOTAL OVERALL OUTSTANDING</span>
                     </div>
+                    <strong id="totalOverallOutstanding" class="summary-value">RM 0.00</strong>
+                    <p>All remaining unpaid instalments</p>
+                </article>
+
+                <article class="summary-card">
+                    <div class="summary-top">
+                        <span class="summary-icon">⌂</span>
+                        <span class="summary-label">ACTIVE DEBT OVERALL</span>
+                    </div>
+                    <strong id="totalOverallActiveDebt" class="summary-value">0</strong>
+                    <p>Debt accounts not fully paid</p>
+                </article>
+
+                <article class="summary-card">
+                    <div class="summary-top">
+                        <span class="summary-icon">✓</span>
+                        <span class="summary-label">TOTAL PAID</span>
+                    </div>
+                    <strong id="totalPaid" class="summary-value">RM 0.00</strong>
+                    <p>All recorded paid instalments</p>
+                </article>
+
+                <article class="summary-card">
+                    <div class="summary-top">
+                        <span class="summary-icon">▤</span>
+                        <span class="summary-label">DUE THIS MONTH</span>
+                    </div>
+                    <strong id="dueThisMonth" class="summary-value">RM 0.00</strong>
+                    <p>All scheduled instalments this month</p>
+                </article>
+
+                <article class="summary-card warning-card">
+                    <div class="summary-top">
+                        <span class="summary-icon">!</span>
+                        <span class="summary-label">OVERDUE OVERALL</span>
+                    </div>
+                    <strong id="overdueTotal" class="summary-value">RM 0.00</strong>
+                    <p>Unpaid instalments past their due date</p>
+                </article>
+            </div>
+        </section>
+
+        <!-- CALENDAR: immediately after dashboard -->
+        <section class="section" id="calendarSection">
+            <div class="section-heading">
+                <div>
+                    <p class="eyebrow">PAYMENT SCHEDULE</p>
+                    <h2>Our calendar</h2>
+                    <p class="section-subtitle">Choose a date to see its scheduled payments.</p>
+                </div>
+            </div>
+
+            <div class="calendar-card">
+                <div class="calendar-toolbar">
+                    <button id="prevMonth" class="month-arrow" type="button" aria-label="Previous month">‹</button>
+                    <h3 id="calendarTitle">Month Year</h3>
+                    <button id="nextMonth" class="month-arrow" type="button" aria-label="Next month">›</button>
                 </div>
 
                 <div class="calendar-weekdays">
@@ -145,135 +157,124 @@
                     <span>Sat</span>
                 </div>
 
-                <div id="calendarGrid" class="calendar-days"></div>
+                <div id="calendarGrid" class="calendar-grid"></div>
 
                 <div class="calendar-legend">
-                    <span><i class="legend-dot due-dot"></i> Upcoming / Unpaid</span>
+                    <span><i class="legend-dot unpaid-dot"></i> Unpaid</span>
                     <span><i class="legend-dot paid-dot"></i> Paid</span>
                     <span><i class="legend-dot overdue-dot"></i> Overdue</span>
+                    <span><i class="legend-dot today-dot"></i> Today</span>
                 </div>
+            </div>
+        </section>
 
-                <div class="selected-date-panel">
-                    <div class="selected-date-heading">
-                        <div>
-                            <p class="eyebrow">PAYMENT DETAILS</p>
-                            <h3 id="selectedDateTitle">Select a date</h3>
-                        </div>
-                        <div class="selected-date-total">
-                            <small>Unpaid total</small>
-                            <strong id="selectedDateTotal">RM 0.00</strong>
-                        </div>
-                    </div>
-
-                    <div id="selectedDatePayments" class="payment-list">
-                        <div class="empty-state">
-                            <span>♡</span>
-                            <p>Select a calendar date to view payments.</p>
-                        </div>
-                    </div>
+        <!-- PAYMENT DETAILS -->
+        <section class="section" id="paymentDetailsSection">
+            <div class="section-heading payment-heading">
+                <div>
+                    <p class="eyebrow">DAILY SCHEDULE</p>
+                    <h2>Payment details</h2>
+                    <p class="section-subtitle">Payments scheduled for your selected date.</p>
                 </div>
-            </section>
+                <div class="selected-date-total">
+                    <span>UNPAID ON THIS DAY</span>
+                    <strong id="selectedDateTotal">RM 0.00</strong>
+                </div>
+            </div>
 
-            <!-- DEBT TYPE OVERVIEW -->
-            <section class="panel section-block">
-                <div class="panel-heading">
+            <div class="payment-details-card">
+                <div class="payment-date-heading">
                     <div>
-                        <p class="eyebrow">WHERE OUR DEBTS COME FROM ♡</p>
-                        <h2>Debt Type Overview</h2>
+                        <span class="mini-label">SELECTED DATE</span>
+                        <h3 id="selectedDateTitle">Today</h3>
+                    </div>
+                    <span class="date-heart">♡</span>
+                </div>
+
+                <div id="selectedDatePayments" class="payment-list">
+                    <div class="empty-state">
+                        <span class="empty-icon">♡</span>
+                        <p>No scheduled payments for this date.</p>
                     </div>
                 </div>
+            </div>
+        </section>
 
-                <div class="type-total-grid">
-                    <article class="type-total-card">
-                        <span>THIS MONTH</span>
-                        <strong id="typeMonthCount">0</strong>
-                        <small id="typeMonthAmount">RM 0.00 unpaid</small>
-                    </article>
+        <!-- MONTHLY BREAKDOWN -->
+        <section class="section">
+            <div class="section-heading">
+                <div>
+                    <p class="eyebrow">MONTHLY BREAKDOWN</p>
+                    <h2 id="monthlyBreakdownTitle">Monthly summary</h2>
+                    <p id="monthlyBreakdownLabel" class="section-subtitle">A breakdown of this month's commitments.</p>
+                </div>
+            </div>
 
-                    <article class="type-total-card">
-                        <span>ALL REMAINING MONTHS</span>
-                        <strong id="typeOverallCount">0</strong>
-                        <small id="typeOverallAmount">RM 0.00 unpaid</small>
-                    </article>
+            <div class="monthly-total-grid">
+                <article class="mini-summary-card">
+                    <span>Total scheduled</span>
+                    <strong id="monthDueTotal">RM 0.00</strong>
+                </article>
+                <article class="mini-summary-card paid-mini">
+                    <span>Total paid</span>
+                    <strong id="monthPaidTotal">RM 0.00</strong>
+                </article>
+                <article class="mini-summary-card remaining-mini">
+                    <span>Remaining</span>
+                    <strong id="monthRemainingTotal">RM 0.00</strong>
+                </article>
+                <article class="mini-summary-card">
+                    <span>Unpaid instalments</span>
+                    <strong id="monthUnpaidCount">0</strong>
+                </article>
+            </div>
+
+            <div id="monthBreakdown" class="person-breakdown-grid"></div>
+        </section>
+
+        <!-- ALL DEBTS -->
+        <section class="section" id="allDebtsSection">
+            <div class="section-heading all-debts-heading">
+                <div>
+                    <p class="eyebrow">ALL COMMITMENTS</p>
+                    <h2>Our debts <span class="count-bubble" id="debtCount">0</span></h2>
+                    <p class="section-subtitle">Manage and filter all your debt accounts.</p>
+                </div>
+                <button id="addDebtButton" class="primary-button" type="button">
+                    <span>＋</span> Add New Debt
+                </button>
+            </div>
+
+            <div class="filter-panel">
+                <div class="search-wrap">
+                    <span>⌕</span>
+                    <input id="debtSearch" type="search" placeholder="Search debt name or note...">
                 </div>
 
-                <div class="type-table-heading">
-                    <strong>Breakdown by debt type</strong>
-                    <small>Only unpaid instalments are counted.</small>
-                </div>
-
-                <div class="debt-type-table">
-                    <div class="debt-type-table-header">
-                        <span>DEBT TYPE</span>
-                        <span>THIS MONTH</span>
-                        <span>ALL MONTHS</span>
-                    </div>
-                    <div id="debtTypeOverview"></div>
-                </div>
-            </section>
-
-            <!-- MONTHLY SUMMARY -->
-            <section class="panel section-block">
-                <div class="panel-heading">
-                    <div>
-                        <p class="eyebrow">MONTHLY COMMITMENTS</p>
-                        <h2>Monthly Breakdown</h2>
-                    </div>
-                </div>
-
-                <div class="monthly-summary-grid">
-                    <article class="monthly-stat">
-                        <span>Total Due</span>
-                        <strong id="monthDueTotal">RM 0.00</strong>
-                    </article>
-
-                    <article class="monthly-stat">
-                        <span>Total Paid</span>
-                        <strong id="monthPaidTotal">RM 0.00</strong>
-                    </article>
-
-                    <article class="monthly-stat">
-                        <span>Remaining</span>
-                        <strong id="monthRemainingTotal">RM 0.00</strong>
-                    </article>
-                </div>
-
-                <div id="monthBreakdown" class="people-breakdown"></div>
-            </section>
-
-            <!-- ALL COMMITMENTS -->
-            <section class="panel section-block">
-                <div class="panel-heading debts-heading">
-                    <div>
-                        <p class="eyebrow">OUR COMMITMENTS</p>
-                        <h2>All Commitments ♡</h2>
-                        <small><span id="debtCount">0</span> debt accounts</small>
-                    </div>
-                </div>
-
-                <div class="filter-row">
-                    <input
-                        type="search"
-                        id="debtSearch"
-                        placeholder="Search debt name..."
-                        autocomplete="off"
-                    >
-
+                <label class="filter-field">
+                    <span>Person</span>
                     <select id="personFilter">
-                        <option value="all">All People</option>
-                        <option value="Baby">Baby</option>
-                        <option value="Sayang">Sayang</option>
+                        <option value="all">Everyone</option>
+                        <option value="Baby">Eisya</option>
+                        <option value="Sayang">Capiq</option>
+                        <option value="Everyone">Shared (Both)</option>
                     </select>
+                </label>
 
+                <label class="filter-field">
+                    <span>Status</span>
                     <select id="statusFilter">
-                        <option value="all">All Status</option>
+                        <option value="all">All statuses</option>
                         <option value="unpaid">Unpaid / Active</option>
-                        <option value="paid">Fully Paid</option>
+                        <option value="paid">Completed / Paid</option>
                         <option value="overdue">Overdue</option>
                     </select>
+                </label>
 
+                <label class="filter-field">
+                    <span>Debt type</span>
                     <select id="debtTypeFilter">
-                        <option value="all">All Debt Types</option>
+                        <option value="all">All debt types</option>
                         <option value="tiktokloan">TikTok Loan</option>
                         <option value="tiktokpaylater">TikTok PayLater</option>
                         <option value="sloan">SLoan</option>
@@ -283,112 +284,95 @@
                         <option value="atomepaylater">Atome PayLater</option>
                         <option value="boostloan">Boost Loan</option>
                     </select>
+                </label>
+            </div>
+
+            <p id="filterMessage" class="filter-message"></p>
+            <div id="debtList" class="debt-grid">
+                <div class="empty-state">
+                    <span class="empty-icon">☁</span>
+                    <p>Loading your debts...</p>
                 </div>
+            </div>
+        </section>
 
-                <div id="filterMessage" class="filter-message"></div>
-
-                <div id="debtList" class="debts-container">
-                    <div class="empty-state">
-                        <span>♡</span>
-                        <p>Loading your debts...</p>
-                    </div>
-                </div>
-            </section>
-
-            <footer class="app-footer">
-                <strong>Perhutangan ♡</strong>
-                <span>Made with love, for Baby & Sayang.</span>
-            </footer>
-        </main>
-    </div>
+        <footer class="footer">
+            <span>Made with love ♡</span>
+            <span>Perhutangan · Our little commitments</span>
+        </footer>
+    </main>
 
     <!-- ADD DEBT MODAL -->
-    <div class="modal-overlay" id="debtModal" hidden>
-        <div class="modal-card">
+    <div id="debtModal" class="modal-backdrop" hidden>
+        <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
             <div class="modal-heading">
                 <div>
                     <p class="eyebrow">NEW COMMITMENT</p>
-                    <h2>Add New Debt ♡</h2>
+                    <h2 id="modalTitle">Add a new debt ♡</h2>
+                    <p class="section-subtitle">Enter the details of your instalment.</p>
                 </div>
-                <button class="icon-button close-button" id="closeModal" type="button">×</button>
+                <button id="closeModal" class="modal-close" type="button" aria-label="Close">×</button>
             </div>
 
             <form id="debtForm">
-                <label for="person">Person</label>
-                <select id="person" name="person" required>
-                    <option value="Baby">Baby</option>
-                    <option value="Sayang">Sayang</option>
-                </select>
+                <label class="form-field">
+                    <span>Who is responsible?</span>
+                    <select id="person" required>
+                        <option value="Baby">Eisya</option>
+                        <option value="Sayang">Capiq</option>
+                        <option value="Everyone">Shared (Both)</option>
+                    </select>
+                </label>
 
-                <label for="debtName">Debt Name</label>
-                <input
-                    id="debtName"
-                    name="name"
-                    type="text"
-                    placeholder="Example: Monthly phone payment"
-                    maxlength="100"
-                    required
-                >
+                <label class="form-field">
+                    <span>Debt name</span>
+                    <input id="debtName" type="text" placeholder="e.g. iPhone instalment" required maxlength="100">
+                </label>
 
-                <label for="debtType">Debt Type</label>
-                <select id="debtType" name="debt_type" required>
-                    <option value="tiktokloan">TikTok Loan</option>
-                    <option value="tiktokpaylater">TikTok PayLater</option>
-                    <option value="sloan">SLoan</option>
-                    <option value="spaylater">SPayLater</option>
-                    <option value="atomeloan">Atome Loan</option>
-                    <option value="atomecard">Atome Card</option>
-                    <option value="atomepaylater">Atome PayLater</option>
-                    <option value="boostloan">Boost Loan</option>
-                </select>
+                <label class="form-field">
+                    <span>Debt type</span>
+                    <select id="debtType" required>
+                        <option value="tiktokloan">TikTok Loan</option>
+                        <option value="tiktokpaylater">TikTok PayLater</option>
+                        <option value="sloan">SLoan</option>
+                        <option value="spaylater">SPayLater</option>
+                        <option value="atomeloan">Atome Loan</option>
+                        <option value="atomecard">Atome Card</option>
+                        <option value="atomepaylater">Atome PayLater</option>
+                        <option value="boostloan">Boost Loan</option>
+                    </select>
+                </label>
 
-                <label for="amount">Monthly Instalment (RM)</label>
-                <input
-                    id="amount"
-                    name="amount"
-                    type="number"
-                    min="0.01"
-                    step="0.01"
-                    placeholder="0.00"
-                    required
-                >
+                <div class="form-two-columns">
+                    <label class="form-field">
+                        <span>Monthly instalment (RM)</span>
+                        <input id="amount" type="number" min="0.01" step="0.01" placeholder="0.00" required>
+                    </label>
 
-                <label for="months">Number of Months</label>
-                <input
-                    id="months"
-                    name="months"
-                    type="number"
-                    min="1"
-                    max="600"
-                    step="1"
-                    placeholder="Example: 12"
-                    required
-                >
+                    <label class="form-field">
+                        <span>Number of months</span>
+                        <input id="months" type="number" min="1" max="600" step="1" placeholder="e.g. 12" required>
+                    </label>
+                </div>
 
-                <label for="firstDueDate">First Due Date</label>
-                <input
-                    id="firstDueDate"
-                    name="first_due_date"
-                    type="date"
-                    required
-                >
+                <label class="form-field">
+                    <span>First payment due date</span>
+                    <input id="firstDueDate" type="date" required>
+                </label>
 
-                <label for="note">Note (Optional)</label>
-                <textarea
-                    id="note"
-                    name="note"
-                    rows="3"
-                    placeholder="Add any extra details..."
-                ></textarea>
+                <label class="form-field">
+                    <span>Note (optional)</span>
+                    <textarea id="note" rows="3" placeholder="Add a note..."></textarea>
+                </label>
 
-                <div class="estimate-box">
-                    <span>Estimated Total Debt</span>
+                <div class="estimated-total">
+                    <span>Estimated total commitment</span>
                     <strong id="estimatedTotal">RM 0.00</strong>
                 </div>
 
                 <p id="formMessage" class="form-message"></p>
 
-                <button class="primary-button save-button" id="saveDebtButton" type="submit">
+                <button id="saveDebtButton" class="primary-button save-button" type="submit">
                     Save Debt ♡
                 </button>
             </form>
@@ -396,7 +380,5 @@
     </div>
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
-
-    <script src="app.js"></script>
 </body>
 </html>

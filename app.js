@@ -135,13 +135,12 @@ function isOverdue(dueDate) {
 }
 
 
+
 function normalizeType(value) {
-    return String(value || "")
+    const cleaned = String(value || "")
         .trim()
         .toLowerCase()
         .replace(/[\s_-]+/g, "");
-}
-
 
     const aliases = {
         tiktokloan: "tiktokloan",
@@ -151,12 +150,13 @@ function normalizeType(value) {
         atomeloan: "atomeloan",
         atomecard: "atomecard",
         atomepaylater: "atomepaylater",
-        boostloan: "boostloan",
+        boostpaylater: "boostpaylater",
         other: "other"
     };
 
-    return aliases[cleaned] || cleaned || "other";
+    return aliases[cleaned] || "other";
 }
+
 
 function typeLabel(value) {
     const type = normalizeType(value);

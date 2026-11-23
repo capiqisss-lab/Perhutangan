@@ -1,4 +1,3 @@
-
 "use strict";
 
 /* =========================================
@@ -18,16 +17,16 @@ const supabaseClient = window.supabase.createClient(
 
 /* DEBT TYPES */
 
-
 const DEBT_TYPES = {
-    tiktokpaylater: "TikTok PayLater",
     tiktokloan: "TikTok Loan",
-    atomepaylater: "Atome PayLater",
-    atomecard: "Atome Card",
-    atomeloan: "Atome Loan",
+    tiktokpaylater: "TikTok PayLater",
     sloan: "SLoan",
     spaylater: "SPayLater",
-    boostpaylater: "Boost PayLater"
+    atomeloan: "Atome Loan",
+    atomecard: "Atome Card",
+    atomepaylater: "Atome PayLater",
+    boostpaylater: "Boost PayLater",
+    other: "Other"
 };
 
 /* APPLICATION STATE */
@@ -134,10 +133,8 @@ function isOverdue(dueDate) {
     return dueDate < dateKey(new Date());
 }
 
-
-
 function normalizeType(value) {
-    const cleaned = String(value || "")
+    const cleaned = String(value || "other")
         .trim()
         .toLowerCase()
         .replace(/[\s_-]+/g, "");
@@ -154,9 +151,8 @@ function normalizeType(value) {
         other: "other"
     };
 
-    return aliases[cleaned] || "other";
+    return aliases[cleaned] || cleaned || "other";
 }
-
 
 function typeLabel(value) {
     const type = normalizeType(value);

@@ -18,16 +18,16 @@ const supabaseClient = window.supabase.createClient(
 
 /* DEBT TYPES */
 
+
 const DEBT_TYPES = {
-    tiktokloan: "TikTok Loan",
     tiktokpaylater: "TikTok PayLater",
+    tiktokloan: "TikTok Loan",
+    atomepaylater: "Atome PayLater",
+    atomecard: "Atome Card",
+    atomeloan: "Atome Loan",
     sloan: "SLoan",
     spaylater: "SPayLater",
-    atomeloan: "Atome Loan",
-    atomecard: "Atome Card",
-    atomepaylater: "Atome PayLater",
-    boostloan: "Boost Loan",
-    other: "Other"
+    boostpaylater: "Boost PayLater"
 };
 
 /* APPLICATION STATE */
@@ -134,11 +134,14 @@ function isOverdue(dueDate) {
     return dueDate < dateKey(new Date());
 }
 
+
 function normalizeType(value) {
-    const cleaned = String(value || "other")
+    return String(value || "")
         .trim()
         .toLowerCase()
         .replace(/[\s_-]+/g, "");
+}
+
 
     const aliases = {
         tiktokloan: "tiktokloan",

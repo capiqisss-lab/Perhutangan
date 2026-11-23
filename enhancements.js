@@ -342,29 +342,47 @@ function renderActivityHistory() {
     });
 }
 
+
 function installEnhancements() {
-    const addButton = $("addDebtButton");
 
-    addButton.addEventListener("click", resetDebtModal);
+    function listen(id, eventName, callback) {
+        const element = document.getElementById(id);
 
-    $("closeModal").addEventListener("click", resetDebtModal);
+        if (!element) {
+            console.warn("Missing HTML element: #" + id);
+            return;
+        }
 
-    $("debtModal").addEventListener("click", event => {
+        element.addEventListener(eventName, callback);
+    }
+
+    // Reset form when adding a new debt
+    listen("addDebtButton", "click", resetDebtModal);
+
+    // Reset form when closing modal
+    listen("closeModal", "click", resetDebtModal);
+
+    listen("debtModal", "click", event => {
         if (event.target === $("debtModal")) {
             resetDebtModal();
         }
     });
 
+    // Reset form when Escape closes the modal
     document.addEventListener("keydown", event => {
+        const modal = $("debtModal");
+
         if (
             event.key === "Escape" &&
-            $("debtModal").hidden
+            modal &&
+            !modal.hidden
         ) {
             resetDebtModal();
         }
     });
 
-    $("debtList").addEventListener("click", event => {
+    // Edit Debt button
+    listen("debtList", "click", event => {
         const button = event.target.closest(
             '[data-action="edit"]'
         );
@@ -374,31 +392,45 @@ function installEnhancements() {
         }
     });
 
-    $("historyFilter").addEventListener(
+    // History filter
+    listen(
+        "historyFilter",
         "change",
         renderActivityHistory
     );
 
-    $("debtSearch").addEventListener(
+    // Debt search
+    listen(
+        "debtSearch",
         "input",
         addEditButtons
     );
 
+    // Debt filters
     [
         "personFilter",
         "statusFilter",
         "debtTypeFilter"
-    ].forEach(id =>
-        $(id).addEventListener("change", addEditButtons)
-    );
+    ].forEach(id => {
+        listen(id, "change", addEditButtons);
+    });
 
-    $("refreshButton").addEventListener(
+    // Refresh history
+    listen(
+        "refreshButton",
         "click",
-        () => loadActivityHistory()
+        loadActivityHistory
     );
 
-    loadActivityHistory();
+    // Load history
+    if (
+        document.getElementById("historyList") &&
+        document.getElementById("historyFilter")
+    ) {
+        loadActivityHistory();
+    }
 }
+
 
 getFilteredDebts = enhancedGetFilteredDebts;
 renderEverything = enhancedRenderEverything;

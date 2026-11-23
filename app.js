@@ -1053,38 +1053,62 @@ async function undoLatestPayment(debtId) {
 
 /* EVENT LISTENERS */
 
-function setupEventListeners() {
-    $("addDebtButton").addEventListener("click", openModal);
-    $("closeModal").addEventListener("click", closeModal);
 
-    $("debtModal").addEventListener("click", event => {
+function setupEventListeners() {
+
+    function listen(id, eventName, callback) {
+        const element = document.getElementById(id);
+
+        if (!element) {
+            console.warn("Missing HTML element: #" + id);
+            return;
+        }
+
+        element.addEventListener(eventName, callback);
+    }
+
+    // ADD DEBT MODAL
+    listen("addDebtButton", "click", openModal);
+    listen("closeModal", "click", closeModal);
+
+    listen("debtModal", "click", event => {
         if (event.target === $("debtModal")) {
             closeModal();
         }
     });
 
     document.addEventListener("keydown", event => {
-        if (event.key === "Escape" && !$("debtModal").hidden) {
+        const modal = $("debtModal");
+
+        if (
+            event.key === "Escape" &&
+            modal &&
+            !modal.hidden
+        ) {
             closeModal();
         }
     });
 
-    $("debtForm").addEventListener("submit", addDebt);
+    // DEBT FORM
+    listen("debtForm", "submit", addDebt);
 
-    $("amount").addEventListener("input", updateEstimatedTotal);
-    $("months").addEventListener("input", updateEstimatedTotal);
+    listen("amount", "input", updateEstimatedTotal);
+    listen("months", "input", updateEstimatedTotal);
 
-    $("prevMonth").addEventListener("click", () => {
+    // CALENDAR NAVIGATION
+    listen("prevMonth", "click", () => {
         changeCalendarMonth(-1);
     });
 
-    $("nextMonth").addEventListener("click", () => {
+    listen("nextMonth", "click", () => {
         changeCalendarMonth(1);
     });
 
-    $("refreshButton").addEventListener("click", loadData);
+    // REFRESH DATA
+    listen("refreshButton", "click", loadData);
 
-    $("calendarGrid").addEventListener("click", event => {
+    // CALENDAR DAY SELECTION
+    listen("calendarGrid", "click", event => {
         const dayButton = event.target.closest("[data-date]");
 
         if (!dayButton) return;
@@ -1102,7 +1126,8 @@ function setupEventListeners() {
         renderEverything();
     });
 
-    $("selectedDatePayments").addEventListener("click", async event => {
+    // PAYMENT ACTIONS
+    listen("selectedDatePayments", "click", async event => {
         const button = event.target.closest("[data-action]");
 
         if (!button) return;
@@ -1113,12 +1138,15 @@ function setupEventListeners() {
 
         if (action === "pay") {
             await setPaymentStatus(debtId, dueDate, true);
-        } else if (action === "undo") {
+        }
+
+        if (action === "undo") {
             await setPaymentStatus(debtId, dueDate, false);
         }
     });
 
-    $("debtList").addEventListener("click", async event => {
+    // DEBT LIST ACTIONS
+    listen("debtList", "click", async event => {
         const button = event.target.closest("[data-action]");
 
         if (!button) return;
@@ -1129,28 +1157,36 @@ function setupEventListeners() {
 
         if (action === "pay") {
             await setPaymentStatus(debtId, dueDate, true);
-        } else if (action === "undo-latest") {
+        }
+
+        if (action === "undo-latest") {
             await undoLatestPayment(debtId);
-        } else if (action === "delete") {
+        }
+
+        if (action === "delete") {
             await deleteDebt(debtId);
         }
     });
 
-    $("debtSearch").addEventListener("input", renderDebtList);
-    $("personFilter").addEventListener("change", renderDebtList);
-    $("statusFilter").addEventListener("change", renderDebtList);
-    $("debtTypeFilter").addEventListener("change", renderDebtList);
+    // SEARCH
+    listen("debtSearch", "input", renderDebtList);
+
+    // FILTER BY PERSON
+    listen("personFilter", "change", renderDebtList);
+
+    // FILTER BY PAYMENT STATUS
+    listen("statusFilter", "change", renderDebtList);
+
+    // FILTER BY DEBT TYPE
+    listen("debtTypeFilter", "change", renderDebtList);
 }
+
 
 /* INITIALIZE */
 
 document.addEventListener("DOMContentLoaded", () => {
-    setupEventListeners();
-
-    $("firstDueDate").value = dateKey(new Date());
-
-    updateEstimatedTotal();
-
-    renderEverything();
-    loadData();
-});
+safeAddEventListener(
+    "debtTypeFilter",
+    "change",
+    renderEverything
+);

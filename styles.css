@@ -1626,3 +1626,37 @@ button {
         transition-duration: .01ms !important;
     }
 }
+
+
+/* =========================================
+   ACTIVITY HISTORY
+========================================= */
+
+.history-list {
+    display: grid;
+    gap: 12px;
+    margin-top: 18px;
+}
+
+.history-item {
+    padding: 16px 20px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.78);
+    border: 1px solid rgba(122, 165, 210, 0.2);
+    box-shadow: 0 5px 18px rgba(50, 95, 140, 0.06);
+}
+
+.history-item strong {
+    display: block;
+    margin-bottom: 5px;
+}
+
+.history-item p {
+    margin: 4px 0 8px;
+    overflow-wrap: anywhere;
+}
+
+.history-item small {
+    opacity: 0.65;
+}
+

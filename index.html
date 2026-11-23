@@ -297,6 +297,60 @@
             </div>
         </section>
 
+        
+<!-- ACTIVITY HISTORY SECTION -->
+<section class="section" id="historySection">
+
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">ACTIVITY LOG</p>
+
+            <h2>History ♡</h2>
+
+            <p class="section-subtitle">
+                Changes saved automatically in Supabase.
+            </p>
+        </div>
+    </div>
+
+    <label class="filter-field">
+        <span>Activity type</span>
+
+        <select id="historyFilter">
+            <option value="all">
+                All activities
+            </option>
+
+            <option value="add">
+                Added debt
+            </option>
+
+            <option value="edit">
+                Edited debt
+            </option>
+
+            <option value="delete">
+                Deleted debt
+            </option>
+
+            <option value="pay">
+                Paid instalment
+            </option>
+
+            <option value="undo">
+                Undone payment
+            </option>
+        </select>
+    </label>
+
+    <div id="historyList" class="history-list">
+        Loading history...
+    </div>
+
+</section>
+<!-- END ACTIVITY HISTORY SECTION -->
+
+        
         <footer class="footer">
             <span>Made with love ♡</span>
             <span>Perhutangan · Our little commitments</span>
@@ -383,4 +437,5 @@
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
 </body>
 </html>
+
 

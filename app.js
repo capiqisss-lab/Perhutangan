@@ -1183,10 +1183,10 @@ function setupEventListeners() {
 
 
 /* INITIALIZE */
-
 document.addEventListener("DOMContentLoaded", () => {
-safeAddEventListener(
-    "debtTypeFilter",
-    "change",
-    renderEverything
-);
+    setupEventListeners();
+    $("firstDueDate").value = dateKey(new Date());
+    updateEstimatedTotal();
+    renderEverything();
+    loadData();
+});

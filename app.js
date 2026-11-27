@@ -31,6 +31,7 @@ const DEBT_TYPES = {
 
 /* APPLICATION STATE */
 
+let financeReady = false;
 let debts = [];
 let payments = [];
 
@@ -278,6 +279,8 @@ function getDebtStats(debt) {
 /* LOAD DATA */
 
 async function loadData() {
+    if (!await requireFinanceSession()) return false;
+    financeReady = false;
     setConnectionStatus("Connecting...", "loading");
 
     try {
@@ -295,13 +298,20 @@ async function loadData() {
         if (debtResult.error) throw debtResult.error;
         if (paymentResult.error) throw paymentResult.error;
 
+        if (!await requireFinanceSession()) return false;
         debts = debtResult.data || [];
         payments = paymentResult.data || [];
 
         setConnectionStatus("Connected", "connected");
 
+        financeReady = true;
         renderEverything();
+        return true;
     } catch (error) {
+        financeReady = false;
+        debts = []; payments = [];
+        renderEverything();
+        markFinanceUnavailable();
         console.error("Supabase loading error:", error);
 
         setConnectionStatus("Connection error", "error");
@@ -315,6 +325,7 @@ async function loadData() {
         `;
 
         showToast("Unable to connect to your debt database.");
+        return false;
     }
 }
 
@@ -345,6 +356,7 @@ function getSelectedMonthSchedule() {
 /* DASHBOARD */
 
 function renderDashboard() {
+    if (!financeReady) { markFinanceUnavailable(); return; }
     const allSchedule = getAllSchedule();
     const selectedMonthSchedule = getSelectedMonthSchedule();
 
@@ -581,6 +593,7 @@ function renderSelectedDatePayments() {
 /* UPDATE PAYMENT STATUS */
 
 async function setPaymentStatus(debtId, dueDate, paid) {
+    if (!financeReady || !await requireFinanceSession()) return;
     const existing = payments.find(item =>
         String(item.debt_id) === String(debtId) &&
         String(item.due_date).slice(0, 10) === dueDate
@@ -918,6 +931,8 @@ function updateEstimatedTotal() {
 
 async function addDebt(event) {
     event.preventDefault();
+    if (!financeReady || !await requireFinanceSession()) return;
+    event.preventDefault();
 
     if (savingDebt) return;
 
@@ -987,6 +1002,7 @@ async function addDebt(event) {
 /* DELETE DEBT */
 
 async function deleteDebt(debtId) {
+    if (!financeReady || !await requireFinanceSession()) return;
     const debt = debts.find(item =>
         String(item.id) === String(debtId)
     );
@@ -1033,6 +1049,7 @@ async function deleteDebt(debtId) {
 /* UNDO LATEST PAYMENT */
 
 async function undoLatestPayment(debtId) {
+    if (!financeReady || !await requireFinanceSession()) return;
     const debt = debts.find(item =>
         String(item.id) === String(debtId)
     );
@@ -1187,6 +1204,5 @@ document.addEventListener("DOMContentLoaded", () => {
     setupEventListeners();
     $("firstDueDate").value = dateKey(new Date());
     updateEstimatedTotal();
-    renderEverything();
-    loadData();
+    initializeFinanceAuth();
 });

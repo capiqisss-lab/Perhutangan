@@ -108,6 +108,8 @@ function openEditDebt(debtId) {
     $("debtName").focus();
 }
 async function enhancedAddDebt(event) {
+    event.preventDefault();
+    if (!financeReady || !await requireFinanceSession()) return;
     if (!editingDebtId) return originalAddDebt(event);
     event.preventDefault();
     if (savingDebt) return;
@@ -156,6 +158,7 @@ async function enhancedAddDebt(event) {
     }
 }
 async function loadActivityHistory() {
+    if (!financeReady || !await requireFinanceSession()) return;
     const {data, error} = await supabaseClient.from("debt_history")
         .select("*").order("created_at", {ascending:false}).limit(200);
     if (error) {
@@ -163,6 +166,7 @@ async function loadActivityHistory() {
         $("historyList").textContent = "Unable to load history. Run the database upgrade SQL first. " + error.message;
         return;
     }
+    if (!await requireFinanceSession()) return;
     activityHistory = data || [];
     renderActivityHistory();
 }
@@ -207,7 +211,7 @@ function installEnhancements() {
     $("debtSearch").addEventListener("input", addEditButtons);
     ["personFilter","statusFilter","debtTypeFilter"].forEach(id =>
         $(id).addEventListener("change", addEditButtons));
-    $("refreshButton").addEventListener("click", () => loadActivityHistory());
+
     // loadData() also refreshes history.
 }
 getFilteredDebts = enhancedGetFilteredDebts;
@@ -224,5 +228,5 @@ deleteDebt = async function(debtId) {
     await loadActivityHistory();
 };
 const baseLoadData = loadData;
-loadData = async function() { await baseLoadData(); await loadActivityHistory(); };
+loadData = async function() { const ok = await baseLoadData(); if (ok) await loadActivityHistory(); return ok; };
 document.addEventListener("DOMContentLoaded", installEnhancements);

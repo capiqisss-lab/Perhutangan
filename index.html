@@ -10,6 +10,8 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="app.js" defer></script>
     <script src="enhancements.js" defer></script>
+    <script src="auth.js" defer></script>
+    <style>[hidden]{display:none!important} .auth-card{max-width:420px;margin:12vh auto;padding:28px;background:#fff;border-radius:24px;box-shadow:0 12px 50px #639bc333;color:#245475;position:relative;z-index:2} .auth-card input{width:100%;padding:12px;margin:8px 0 16px;border:1px solid #b8d9eb;border-radius:12px;font-size:16px} .auth-card button{width:100%}</style>
 </head>
 <body>
     <div class="sky-background" aria-hidden="true">
@@ -22,7 +24,11 @@
         <div class="floating-heart heart-three">♡</div>
     </div>
 
-    <main class="app-shell">
+    <section id="authPanel" class="auth-card">
+<h1>Perhutangan ♡</h1><p>Sign in to our little debt tracker.</p>
+<form id="authForm"><label>Email<input id="authEmail" type="email" autocomplete="username" required></label><label>Password<input id="authPassword" type="password" autocomplete="current-password" required></label><button id="authSubmit" class="primary-button" type="submit">Sign in ♡</button></form>
+<p id="authMessage" role="status">Checking session…</p></section>
+<main class="app-shell" hidden>
         <header class="topbar">
             <a class="brand" href="#">
                 <span class="brand-icon">♡</span>
@@ -33,6 +39,7 @@
             </a>
 
             <div class="topbar-right">
+<button id="logoutButton" class="icon-button" type="button" title="Sign out" aria-label="Sign out">↪</button>
                 <div class="connection">
                     <span id="statusDot" class="status-dot"></span>
                     <span id="connectionStatus">Connecting...</span>
